@@ -14,5 +14,10 @@ namespace Ryora.Server.Hubs
             Groups.Add(Context.ConnectionId, "1");
             return base.OnConnected();
         }
+
+        public async Task SendImage(string channel, int frame, string image)
+        {
+            await Clients.Group(channel).NewImage(frame, image);
+        }
     }
 }

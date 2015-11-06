@@ -56,6 +56,15 @@ namespace Ryora.Tech
                     }
                 });
             };
+
+            Task.Run(async () =>
+            {
+                await realtimeClient.StartConnection();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Title = $"Technician View [Connection Type: {realtimeClient.Transport}]";
+                });
+            });
         }
     }
 }

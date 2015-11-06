@@ -30,22 +30,38 @@ namespace Ryora.Client
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly RealtimeClient RealtimeClient;
         public MainWindow()
         {
             InitializeComponent();
-
+            RealtimeClient = new RealtimeClient();
+            Task.Run(async () =>
+            {
+                await RealtimeClient.StartConnection();
+            });
             this.LayoutUpdated += async (s, e) =>
             {
-                if (!IsStreaming || IsCapturing) return;
-                IsCapturing = true;
-                using (var ms = CreateBitmapFromVisual(this))
+                if (!IsStreaming) return;
+                FramesRequested++;               
+                if (IsCapturing) return;
+                while (FramesRequested > 0)
                 {
-                    if (ms == null) return;
-                    var imageData = ms.ToArray();
-                    await ProcessImage(imageData);
+                    FramesRequested = 0;
+                    await SendScreen();                    
                 }
-                IsCapturing = false;
             };
+        }
+
+        private async Task SendScreen()
+        {
+            IsCapturing = true;
+            using (var ms = CreateBitmapFromVisual(this))
+            {
+                if (ms == null) return;
+                var imageData = ms.ToArray();
+                await ProcessImage(imageData);
+            }
+            IsCapturing = false;
         }
 
         public readonly EncoderParameters EncoderParameters = new EncoderParameters(1)
@@ -56,6 +72,7 @@ namespace Ryora.Client
         private static int Frame { get; set; } = 0;
         private static bool IsStreaming { get; set; } = false;
         private static bool IsCapturing { get; set; } = false;
+        private static int FramesRequested { get; set; } = 0;
 
         private Timer _screenshotTimer = null;
         public Timer ScreenshotTimer
@@ -81,27 +98,19 @@ namespace Ryora.Client
 
         private void GoTimeButton_Click(object sender, RoutedEventArgs e)
         {
-            GoTimeButton.Content = !IsStreaming ? "Start Streaming" : "Stop Streaming";
             IsStreaming = !IsStreaming;
+            GoTimeButton.Content = !IsStreaming ? "Start Streaming" : "Stop Streaming";            
         }
 
         private async Task ProcessImage(byte[] bitmap)
         {
             try
             {
-                using (
-                    var client = new HttpClient()
-                    {
-                        BaseAddress = new Uri("http://ryora.azurewebsites.net/API/RA/")
-                    })
-                {
-                    var response = await client.PostAsync($"1/{Frame++}", new ByteArrayContent(bitmap));
-                    Console.WriteLine($"Frame: {Frame}");
-                }
+                await RealtimeClient.SendImage("1", Frame++, Convert.ToBase64String(bitmap));
+                Console.WriteLine($"Frame: {Frame}");                                
             }
             catch (Exception ex)
             {
-                //this.ErrorMessage.Text = $"Error doing something dog:\n{ex.Message}";
                 Console.WriteLine(ex.Message);
             }
         }

@@ -37,13 +37,19 @@ namespace Ryora.Tech
                 if (NewImage == null) return;
                 NewImage(this, new NewImageEventArgs(frame, image));
             });
-            HubProxy.On("Ping", () =>
-            {
-                Console.WriteLine("PING!");
-            });
-
-            HubConnection.Start();
         }
 
+        public async Task StartConnection()
+        {
+            await HubConnection.Start();
+        }
+
+        public string Transport {
+            get
+            {
+                if (HubConnection == null || HubConnection.State == ConnectionState.Disconnected) return "Disconnected";
+                return HubConnection.Transport.Name;
+            }
+        }
     }
 }
