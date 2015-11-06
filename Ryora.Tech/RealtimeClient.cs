@@ -12,7 +12,11 @@ namespace Ryora.Tech
     {
         private readonly HubConnection HubConnection;
         private IHubProxy HubProxy;
+#if DEBUG
+        private const string HostUrl = "http://localhost/Ryora.Server/";
+#else
         private const string HostUrl = "http://ryora.azurewebsites.net";
+#endif
 
         public event EventHandler NewImage;
         public event EventHandler MouseMove;
@@ -54,7 +58,8 @@ namespace Ryora.Tech
 
         public RealtimeClient()
         {
-            HubConnection = new HubConnection(HostUrl);
+            var queryString = new Dictionary<string, string> {{"Channel", "1"}};
+            HubConnection = new HubConnection(HostUrl, queryString);
             HubProxy = HubConnection.CreateHubProxy("RemoteAssistHub");
             HubProxy.On<int, string>("NewImage", (frame, image) =>
             {
@@ -75,6 +80,7 @@ namespace Ryora.Tech
 
         public async Task StartConnection()
         {
+
             await HubConnection.Start();
         }
 

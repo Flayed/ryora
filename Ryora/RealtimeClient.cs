@@ -12,11 +12,16 @@ namespace Ryora.Client
     {
         private readonly HubConnection HubConnection;
         private IHubProxy HubProxy;
+#if DEBUG
+        private const string HostUrl = "http://localhost/Ryora.Server/";
+#else
         private const string HostUrl = "http://ryora.azurewebsites.net";
+#endif
         private bool IsStarted = false;
         public RealtimeClient()
         {
-            HubConnection = new HubConnection(HostUrl);
+            var queryString = new Dictionary<string, string> {{"Channel", "1"}};
+            HubConnection = new HubConnection(HostUrl, queryString);
             HubProxy = HubConnection.CreateHubProxy("RemoteAssistHub");
             
             HubConnection.Start();

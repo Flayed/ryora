@@ -1,0 +1,33 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+@section Scripts {
+    <script type="text/javascript" src="~/Scripts/Ryora.js"></script>
+}
+<h2>RYORA</h2>
+<div>
+    Incredibly scientific data usage calculator that I made in about 10 minutes.
+</div>
+<div data-bind="foreach: channels">
+    <div class="channel">
+        <div>
+            <span class="title">Channel <span data-bind="text:channel"></span></span>    
+        </div>        
+        <table>
+            <tr>
+                <th>Bytes</th>
+                <th>Kilobytes</th>
+                <th>Megabytes</th>
+                <th>Gigabytes</th>
+            </tr>
+            <tr>
+                <td data-bind="text:transmitted"></td>
+                <td data-bind="text:transmittedKb"></td>
+                <td data-bind="text:transmittedMb"></td>
+                <td data-bind="text:transmittedGb"></td>
+            </tr>
+        </table>
+    </div>
+</div>

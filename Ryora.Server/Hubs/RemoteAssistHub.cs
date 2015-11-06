@@ -9,10 +9,27 @@ namespace Ryora.Server.Hubs
 {
     public class RemoteAssistHub : Hub
     {
-        public override Task OnConnected()
+        private static readonly List<string> Channels = new List<string>();
+
+        private readonly string DataChannel = "DataChannel";
+        public override async Task OnConnected()
         {
-            Groups.Add(Context.ConnectionId, "1");
-            return base.OnConnected();
+            var channel = Context.QueryString.Get("Channel");
+            await Groups.Add(Context.ConnectionId, !string.IsNullOrWhiteSpace(channel) ? channel : DataChannel);
+            if (string.IsNullOrWhiteSpace(channel))
+            {
+                await Clients.Caller.ChannelListing(Channels);
+            }
+            else
+            {
+                if (!Channels.Contains(channel))
+                {
+                    Channels.Add(channel);
+                    await Clients.Group(DataChannel).NewChannel(channel);
+                }
+
+            }
+            await base.OnConnected();
         }
 
         public async Task Share(string channel, bool isSharing)
@@ -23,11 +40,13 @@ namespace Ryora.Server.Hubs
         public async Task SendImage(string channel, int frame, string image)
         {
             await Clients.Group(channel).NewImage(frame, image);
+            await Clients.Group(DataChannel).MoreData(channel, (Math.Floor((double)image.Length / 3) + 1) * 4 + 1 + channel.Length * 8 + 32);
         }
 
         public async Task SendMouseCoords(string channel, double x, double y)
         {
             await Clients.Group(channel).MouseMove(x, y);
+            await Clients.Group(DataChannel).MoreData(channel, 128 + channel.Length*8);
         }
     }
 }
