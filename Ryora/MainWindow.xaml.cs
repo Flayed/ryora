@@ -33,12 +33,29 @@ namespace Ryora.Client
         public MainWindow()
         {
             InitializeComponent();
+
+            this.LayoutUpdated += async (s, e) =>
+            {
+                if (!IsStreaming || IsCapturing) return;
+                IsCapturing = true;
+                using (var ms = CreateBitmapFromVisual(this))
+                {
+                    if (ms == null) return;
+                    var imageData = ms.ToArray();
+                    await ProcessImage(imageData);
+                }
+                IsCapturing = false;
+            };
         }
 
         public readonly EncoderParameters EncoderParameters = new EncoderParameters(1)
         {
             Param = {[0] = new EncoderParameter(Encoder.Quality, 25L) }
         };
+
+        private static int Frame { get; set; } = 0;
+        private static bool IsStreaming { get; set; } = false;
+        private static bool IsCapturing { get; set; } = false;
 
         private Timer _screenshotTimer = null;
         public Timer ScreenshotTimer
@@ -64,16 +81,8 @@ namespace Ryora.Client
 
         private void GoTimeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ScreenshotTimer.Enabled)
-            {
-                ScreenshotTimer.Stop();
-                this.GoTimeButton.Content = "Start Streaming";
-            }
-            else
-            {
-                ScreenshotTimer.Start();
-                this.GoTimeButton.Content = "Stop Streaming";
-            }
+            GoTimeButton.Content = !IsStreaming ? "Start Streaming" : "Stop Streaming";
+            IsStreaming = !IsStreaming;
         }
 
         private async Task ProcessImage(byte[] bitmap)
@@ -86,8 +95,8 @@ namespace Ryora.Client
                         BaseAddress = new Uri("http://ryora.azurewebsites.net/API/RA/")
                     })
                 {
-                    var response = await client.PostAsync("1", new ByteArrayContent(bitmap));
-                    Console.WriteLine(response.StatusCode);
+                    var response = await client.PostAsync($"1/{Frame++}", new ByteArrayContent(bitmap));
+                    Console.WriteLine($"Frame: {Frame}");
                 }
             }
             catch (Exception ex)
@@ -115,7 +124,8 @@ namespace Ryora.Client
                 var bounds = VisualTreeHelper.GetDescendantBounds(target);
 
 
-                RenderTargetBitmap renderTarget = new RenderTargetBitmap((int)bounds.Width, (int)bounds.Height, 96, 96, PixelFormats.Pbgra32);
+                RenderTargetBitmap renderTarget = new RenderTargetBitmap((int)bounds.Width, (int)bounds.Height, 96,
+                    96, PixelFormats.Pbgra32);
 
                 DrawingVisual visual = new DrawingVisual();
 

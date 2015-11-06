@@ -13,10 +13,10 @@ namespace Ryora.Server.Hubs.Accessors
         private static IHubContext _context = null;
         public static IHubContext Context => _context ?? (_context = GlobalHost.ConnectionManager.GetHubContext<RemoteAssistHub>());
 
-        public static async Task PublishImage(int channel, Guid imageGuid)
+        public static async Task PublishImage(string channel, int frame, string image)
         {
             //await Context.Clients.Group($"{channel}").NewImage(imageGuid);
-            await Context.Clients.All.NewImage(imageGuid);
+            await Context.Clients.All.NewImage(frame, image);
         }
     }
 }

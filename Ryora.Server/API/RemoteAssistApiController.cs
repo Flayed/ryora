@@ -17,12 +17,11 @@ namespace Ryora.Server.API
     [RoutePrefix("API/RA"), AllowAnonymous]
     public class RemoteAssistApiController : ApiController
     {
-        [Route("{id:int}"), HttpPost]
-        public async Task PostImage(int id)
+        [Route("{id:int}/{frame:int}"), HttpPost]
+        public async Task PostImage(int id, int frame)
         {
             var content = await Request.Content.ReadAsByteArrayAsync();
-            var guid = RemoteAssistService.AddImage(content);
-            await RemoteAssistHubAccessor.PublishImage(id, guid);
+            await RemoteAssistService.AddImage(id.ToString(), frame, Convert.ToBase64String(content));
         }
 
         [Route("GetImage"), HttpPost]

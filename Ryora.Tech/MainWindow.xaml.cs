@@ -25,39 +25,37 @@ namespace Ryora.Tech
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static int LastFrame { get; set; } = 0;
+
         public MainWindow()
         {
             InitializeComponent();
             RealtimeClient realtimeClient = new RealtimeClient();
-            realtimeClient.NewImage += async (o, e) => {
+            realtimeClient.NewImage += (o, e) =>
+            {
                 var ea = e as RealtimeClient.NewImageEventArgs;
-                if (ea?.ImageGuid == null)
+                if (ea?.Image == null || ea?.Frame < LastFrame)
                     return;
-                using (var client = new HttpClient() { BaseAddress = new Uri("http://ryora.azurewebsites.net/API/RA/") })
+                LastFrame = ea.Frame;
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    var response = await client.PostAsync("GetImage", new StringContent(ea.ImageGuid.ToString()));
-                    response.EnsureSuccessStatusCode();
-                    var content = await response.Content.ReadAsByteArrayAsync();
-                    Application.Current.Dispatcher.Invoke(() =>
+                    try
                     {
-                        try
-                        {
-                            using (var ms = new MemoryStream(content))
-                            {
-                                Bitmap bmp = new Bitmap(ms);
-                                this.Screenshot.Source = Imaging.CreateBitmapSourceFromHBitmap(bmp.GetHbitmap(),
-                                    IntPtr.Zero,
-                                    Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message);
-                        }
-                    });
-                }
-            };
+                        using (var ms = new MemoryStream(Convert.FromBase64String(ea.Image)))
+                        {                            
+                            Bitmap bmp = new Bitmap(ms);
+                            this.Screenshot.Source = Imaging.CreateBitmapSourceFromHBitmap(bmp.GetHbitmap(),
+                                IntPtr.Zero,
+                                Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
 
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                });
+            };
         }
     }
 }

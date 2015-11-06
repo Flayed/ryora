@@ -18,11 +18,13 @@ namespace Ryora.Tech
 
         public class NewImageEventArgs : EventArgs
         {
-            public Guid ImageGuid { get; set; }
+            public string Image { get; set; }
+            public int Frame { get; set; }
 
-            public NewImageEventArgs(Guid imageGuid)
+            public NewImageEventArgs(int frame, string image)
             {
-                ImageGuid = imageGuid;
+                Frame = frame;
+                Image = image;
             }
         }
 
@@ -30,10 +32,10 @@ namespace Ryora.Tech
         {
             HubConnection = new HubConnection(HostUrl);
             HubProxy = HubConnection.CreateHubProxy("RemoteAssistHub");
-            HubProxy.On("NewImage", (imageGuid) =>
+            HubProxy.On<int, string>("NewImage", (frame, image) =>
             {
                 if (NewImage == null) return;
-                NewImage(this, new NewImageEventArgs(new Guid(imageGuid)));
+                NewImage(this, new NewImageEventArgs(frame, image));
             });
             HubProxy.On("Ping", () =>
             {
