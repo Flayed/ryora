@@ -30,10 +30,14 @@ namespace Ryora.Client
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly RealtimeClient RealtimeClient;
+        internal readonly RealtimeClient RealtimeClient;
+        internal readonly long MouseMoveThrottle = 100;
+        internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();        
+
         public MainWindow()
         {
             InitializeComponent();
+            MouseMoveThrottleTimer.Start();
             RealtimeClient = new RealtimeClient();
             Task.Run(async () =>
             {
@@ -49,6 +53,14 @@ namespace Ryora.Client
                     FramesRequested = 0;
                     await SendScreen();                    
                 }
+            };
+
+            MouseMove += async (s, e) =>
+            {
+                if (!IsStreaming || MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
+                MouseMoveThrottleTimer.Restart();
+                var pos = e.GetPosition(this);
+                await RealtimeClient.SendMouseCoords("1", pos.X, pos.Y);
             };
         }
 
@@ -99,7 +111,11 @@ namespace Ryora.Client
         private void GoTimeButton_Click(object sender, RoutedEventArgs e)
         {
             IsStreaming = !IsStreaming;
-            GoTimeButton.Content = !IsStreaming ? "Start Streaming" : "Stop Streaming";            
+            GoTimeButton.Content = !IsStreaming ? "Start Streaming" : "Stop Streaming";
+            Task.Run(async () =>
+            {
+                await RealtimeClient.Sharing("1", IsStreaming);
+            });
         }
 
         private async Task ProcessImage(byte[] bitmap)

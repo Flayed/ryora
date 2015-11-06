@@ -33,5 +33,17 @@ namespace Ryora.Client
             if (!IsStarted) return;
             await HubProxy.Invoke("SendImage", channel, frame, image);
         }
+
+        public async Task SendMouseCoords(string channel, double x, double y)
+        {
+            if (!IsStarted) return;
+            await HubProxy.Invoke("SendMouseCoords", channel, x, y);
+        }
+
+        public async Task Sharing(string channel, bool isSharing)
+        {
+            if (!IsStarted) return;
+            await HubProxy.Invoke("Share", channel, isSharing);
+        }
     }
 }

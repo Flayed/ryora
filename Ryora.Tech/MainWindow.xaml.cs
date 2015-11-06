@@ -13,6 +13,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -26,10 +27,12 @@ namespace Ryora.Tech
     public partial class MainWindow : Window
     {
         private static int LastFrame { get; set; } = 0;
+        private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
 
         public MainWindow()
         {
             InitializeComponent();
+            MousePointer.Source = GetMousePointerImage();
             RealtimeClient realtimeClient = new RealtimeClient();
             realtimeClient.NewImage += (o, e) =>
             {
@@ -57,6 +60,45 @@ namespace Ryora.Tech
                 });
             };
 
+            realtimeClient.MouseMove += (o, e) => {
+                var ea = e as RealtimeClient.MouseMoveEventArgs;
+                if (ea == null) return;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (!MousePointer.IsVisible) MousePointer.Visibility = Visibility.Visible;
+
+                    var offset = VisualTreeHelper.GetOffset(MousePointer);
+                    TranslateTransform trans = new TranslateTransform();
+                    MousePointer.RenderTransform = trans;
+                    DoubleAnimation anim1 = new DoubleAnimation(LastPoint.Y, ea.Y, TimeSpan.FromMilliseconds(100));
+                    DoubleAnimation anim2 = new DoubleAnimation(LastPoint.X, ea.X, TimeSpan.FromMilliseconds(100));
+                    Console.WriteLine($"({LastPoint.X},{LastPoint.Y}) => ({ea.X}, {ea.Y})");
+                    trans.BeginAnimation(TranslateTransform.YProperty, anim1);
+                    trans.BeginAnimation(TranslateTransform.XProperty, anim2);
+                    LastPoint = new System.Windows.Point(ea.X, ea.Y);
+                });
+            };
+
+            realtimeClient.Sharing += (o, e) =>
+            {
+                var ea = e as RealtimeClient.SharingEventArgs;
+                if (ea == null) return;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (!ea.IsSharing)
+                    {
+                        PausedOverlay.Visibility = Visibility.Visible;
+                        PausedText.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        PausedOverlay.Visibility = Visibility.Hidden;
+                        PausedText.Visibility = Visibility.Hidden;
+                    }
+
+                });
+            };
+
             Task.Run(async () =>
             {
                 await realtimeClient.StartConnection();
@@ -65,6 +107,23 @@ namespace Ryora.Tech
                     Title = $"Technician View [Connection Type: {realtimeClient.Transport}]";
                 });
             });
+        }
+
+        public ImageSource GetMousePointerImage()
+        {
+            ImageSource source = null;
+            string base64MousePointerImage =
+                "iVBORw0KGgoAAAANSUhEUgAAAAoAAAASBAMAAACQmVJ4AAAAElBMVEUAAAD/KSn/KSn/KSn/KSkAAADTXdH0AAAABXRSTlMAVnJ3e9zRrXQAAAA/SURBVAgdBcExAQJAEAOw4OA7VAJKUHBD/Vsh8XvwDfQeuqC7R7fQ7Z5ui2473RK9haZHXu8he/gs+PSgB8kfhyMLXGTrT2kAAAAASUVORK5CYII=";
+
+            using (var ms = new MemoryStream(Convert.FromBase64String(base64MousePointerImage)))
+            {
+                Bitmap bmp = new Bitmap(ms);
+                source = Imaging.CreateBitmapSourceFromHBitmap(bmp.GetHbitmap(),
+                    IntPtr.Zero,
+                    Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
+            }
+            return source;
         }
     }
 }

@@ -15,9 +15,19 @@ namespace Ryora.Server.Hubs
             return base.OnConnected();
         }
 
+        public async Task Share(string channel, bool isSharing)
+        {
+            await Clients.Group(channel).Share(isSharing);
+        }
+
         public async Task SendImage(string channel, int frame, string image)
         {
             await Clients.Group(channel).NewImage(frame, image);
+        }
+
+        public async Task SendMouseCoords(string channel, double x, double y)
+        {
+            await Clients.Group(channel).MouseMove(x, y);
         }
     }
 }

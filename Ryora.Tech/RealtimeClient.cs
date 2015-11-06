@@ -15,6 +15,8 @@ namespace Ryora.Tech
         private const string HostUrl = "http://ryora.azurewebsites.net";
 
         public event EventHandler NewImage;
+        public event EventHandler MouseMove;
+        public event EventHandler Sharing;
 
         public class NewImageEventArgs : EventArgs
         {
@@ -28,6 +30,28 @@ namespace Ryora.Tech
             }
         }
 
+        public class MouseMoveEventArgs : EventArgs
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
+
+            public MouseMoveEventArgs(double x, double y)
+            {
+                X = x;
+                Y = y;
+            }
+        }
+
+        public class SharingEventArgs : EventArgs
+        {
+            public bool IsSharing { get; set; }
+
+            public SharingEventArgs(bool isSharing)
+            {
+                IsSharing = isSharing;
+            }
+        }
+
         public RealtimeClient()
         {
             HubConnection = new HubConnection(HostUrl);
@@ -36,6 +60,16 @@ namespace Ryora.Tech
             {
                 if (NewImage == null) return;
                 NewImage(this, new NewImageEventArgs(frame, image));
+            });
+            HubProxy.On<int, int>("MouseMove", (x, y) =>
+            {
+                if (MouseMove == null) return;
+                MouseMove(this, new MouseMoveEventArgs(x, y));
+            });
+            HubProxy.On("Share", (isSharing) =>
+            {
+                if (Sharing == null) return;
+                Sharing(this, new SharingEventArgs(isSharing));
             });
         }
 
