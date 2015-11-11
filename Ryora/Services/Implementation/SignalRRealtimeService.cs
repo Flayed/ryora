@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client;
 
-namespace Ryora.Client
+namespace Ryora.Client.Services.Implementation
 {
-    public class RealtimeClient
+    public class SignalRRealtimeService : IRealtimeService
     {
         private readonly HubConnection HubConnection;
         private IHubProxy HubProxy;
@@ -18,7 +18,7 @@ namespace Ryora.Client
         private const string HostUrl = "http://ryora.azurewebsites.net";
 #endif
         private bool IsStarted = false;
-        public RealtimeClient()
+        public SignalRRealtimeService()
         {
             var queryString = new Dictionary<string, string> {{"Channel", "1"}};
             HubConnection = new HubConnection(HostUrl, queryString);
@@ -27,25 +27,25 @@ namespace Ryora.Client
             HubConnection.Start();
         }
 
-        public async Task StartConnection()
+        public async Task StartConnection(short channel)
         {
             await HubConnection.Start();
             IsStarted = true;
         }
 
-        public async Task SendImage(string channel, int frame, string image)
+        public async Task SendImage(short channel, int frame, byte[] image)
         {
             if (!IsStarted) return;
             await HubProxy.Invoke("SendImage", channel, frame, image);
         }
 
-        public async Task SendMouseCoords(string channel, double x, double y)
+        public async Task SendMouseCoords(short channel, double x, double y)
         {
             if (!IsStarted) return;
             await HubProxy.Invoke("SendMouseCoords", channel, x, y);
         }
 
-        public async Task Sharing(string channel, bool isSharing)
+        public async Task Sharing(short channel, bool isSharing)
         {
             if (!IsStarted) return;
             await HubProxy.Invoke("Share", channel, isSharing);

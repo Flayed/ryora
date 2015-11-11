@@ -34,5 +34,6 @@ namespace Ryora.Server.API
             response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");            
             return response;
         }
+
     }
 }

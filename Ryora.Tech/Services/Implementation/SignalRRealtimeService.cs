@@ -5,10 +5,12 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client;
+using Ryora.Tech.Models;
+using Ryora.Tech.Services;
 
-namespace Ryora.Tech
+namespace Ryora.Tech.Services.Implementation
 {
-    public class RealtimeClient
+    public class SignalRRealtimeService : IRealtimeService
     {
         private readonly HubConnection HubConnection;
         private IHubProxy HubProxy;
@@ -21,50 +23,16 @@ namespace Ryora.Tech
         public event EventHandler NewImage;
         public event EventHandler MouseMove;
         public event EventHandler Sharing;
-
-        public class NewImageEventArgs : EventArgs
+        
+        public SignalRRealtimeService(short channel)
         {
-            public string Image { get; set; }
-            public int Frame { get; set; }
-
-            public NewImageEventArgs(int frame, string image)
-            {
-                Frame = frame;
-                Image = image;
-            }
-        }
-
-        public class MouseMoveEventArgs : EventArgs
-        {
-            public double X { get; set; }
-            public double Y { get; set; }
-
-            public MouseMoveEventArgs(double x, double y)
-            {
-                X = x;
-                Y = y;
-            }
-        }
-
-        public class SharingEventArgs : EventArgs
-        {
-            public bool IsSharing { get; set; }
-
-            public SharingEventArgs(bool isSharing)
-            {
-                IsSharing = isSharing;
-            }
-        }
-
-        public RealtimeClient()
-        {
-            var queryString = new Dictionary<string, string> {{"Channel", "1"}};
+            var queryString = new Dictionary<string, string> {{"Channel", channel.ToString()}};
             HubConnection = new HubConnection(HostUrl, queryString);
             HubProxy = HubConnection.CreateHubProxy("RemoteAssistHub");
             HubProxy.On<int, string>("NewImage", (frame, image) =>
             {
                 if (NewImage == null) return;
-                NewImage(this, new NewImageEventArgs(frame, image));
+                //NewImage(this, new NewImageEventArgs(frame, image));
             });
             HubProxy.On<int, int>("MouseMove", (x, y) =>
             {
@@ -78,7 +46,7 @@ namespace Ryora.Tech
             });
         }
 
-        public async Task StartConnection()
+        public async Task StartConnection(short channel)
         {
 
             await HubConnection.Start();

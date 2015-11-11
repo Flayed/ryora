@@ -68,7 +68,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="RealtimeClient.cs" />
+    <Compile Include="Services\Implementation\UdpRealtimeService.cs" />
+    <Compile Include="Services\IRealtimeService.cs" />
+    <Compile Include="Services\Implementation\SignalRRealtimeService.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -109,6 +111,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ryora.Udp\Ryora.Udp.csproj">
+      <Project>{316c0af6-f280-4281-a7e3-8e39024ad1ea}</Project>
+      <Name>Ryora.Udp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

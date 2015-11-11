@@ -18,6 +18,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.AspNet.SignalR.Client;
+using Ryora.Tech.Models;
+using Ryora.Tech.Services;
+using Ryora.Tech.Services.Implementation;
 
 namespace Ryora.Tech
 {
@@ -28,15 +31,19 @@ namespace Ryora.Tech
     {
         private static int LastFrame { get; set; } = 0;
         private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
+        private static short Channel { get; } = 1;
+        private readonly IRealtimeService RealtimeService;
+
 
         public MainWindow()
         {
             InitializeComponent();
             MousePointer.Source = GetMousePointerImage();
-            RealtimeClient realtimeClient = new RealtimeClient();
-            realtimeClient.NewImage += (o, e) =>
+            //RealtimeService = new SignalRRealtimeService(Channel);
+            RealtimeService = new UdpRealtimeService();
+            RealtimeService.NewImage += (o, e) =>
             {
-                var ea = e as RealtimeClient.NewImageEventArgs;
+                var ea = e as NewImageEventArgs;
                 if (ea?.Image == null || ea?.Frame < LastFrame)
                     return;
                 LastFrame = ea.Frame;
@@ -44,9 +51,9 @@ namespace Ryora.Tech
                 {
                     try
                     {
-                        using (var ms = new MemoryStream(Convert.FromBase64String(ea.Image)))
+                        using (var ms = new MemoryStream(ea.Image))
                         {                            
-                            Bitmap bmp = new Bitmap(ms);
+                            Bitmap bmp = new Bitmap(ms, true);
                             this.Screenshot.Source = Imaging.CreateBitmapSourceFromHBitmap(bmp.GetHbitmap(),
                                 IntPtr.Zero,
                                 Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
@@ -60,8 +67,8 @@ namespace Ryora.Tech
                 });
             };
 
-            realtimeClient.MouseMove += (o, e) => {
-                var ea = e as RealtimeClient.MouseMoveEventArgs;
+            RealtimeService.MouseMove += (o, e) => {
+                var ea = e as MouseMoveEventArgs;
                 if (ea == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -79,9 +86,9 @@ namespace Ryora.Tech
                 });
             };
 
-            realtimeClient.Sharing += (o, e) =>
+            RealtimeService.Sharing += (o, e) =>
             {
-                var ea = e as RealtimeClient.SharingEventArgs;
+                var ea = e as SharingEventArgs;
                 if (ea == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -101,10 +108,10 @@ namespace Ryora.Tech
 
             Task.Run(async () =>
             {
-                await realtimeClient.StartConnection();
+                await RealtimeService.StartConnection(Channel);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Title = $"Technician View [Connection Type: {realtimeClient.Transport}]";
+                    Title = $"Technician View [Connection Type: {RealtimeService.Transport}]";
                 });
             });
         }

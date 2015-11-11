@@ -19,6 +19,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Ryora.Client.Services;
+using Ryora.Client.Services.Implementation;
 using Encoder = System.Drawing.Imaging.Encoder;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using Point = System.Drawing.Point;
@@ -30,18 +32,18 @@ namespace Ryora.Client
     /// </summary>
     public partial class MainWindow : Window
     {
-        internal readonly RealtimeClient RealtimeClient;
-        internal readonly long MouseMoveThrottle = 100;
-        internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();        
-
+        public IRealtimeService RealtimeService;
+        internal readonly long MouseMoveThrottle = 0;
+        internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
+        internal short Channel = 1;
         public MainWindow()
         {
             InitializeComponent();
             MouseMoveThrottleTimer.Start();
-            RealtimeClient = new RealtimeClient();
+            RealtimeService = new UdpRealtimeService();
             Task.Run(async () =>
             {
-                await RealtimeClient.StartConnection();
+                await RealtimeService.StartConnection(Channel);
             });
             this.LayoutUpdated += async (s, e) =>
             {
@@ -60,7 +62,7 @@ namespace Ryora.Client
                 if (!IsStreaming || MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
                 MouseMoveThrottleTimer.Restart();
                 var pos = e.GetPosition(this);
-                await RealtimeClient.SendMouseCoords("1", pos.X, pos.Y);
+                await RealtimeService.SendMouseCoords(Channel, pos.X, pos.Y);
             };
         }
 
@@ -114,7 +116,7 @@ namespace Ryora.Client
             GoTimeButton.Content = !IsStreaming ? "Start Streaming" : "Stop Streaming";
             Task.Run(async () =>
             {
-                await RealtimeClient.Sharing("1", IsStreaming);
+                await RealtimeService.Sharing(Channel, IsStreaming);
             });
         }
 
@@ -122,7 +124,7 @@ namespace Ryora.Client
         {
             try
             {
-                await RealtimeClient.SendImage("1", Frame++, Convert.ToBase64String(bitmap));
+                await RealtimeService.SendImage(Channel, Frame++, bitmap);
                 Console.WriteLine($"Frame: {Frame}");                                
             }
             catch (Exception ex)
