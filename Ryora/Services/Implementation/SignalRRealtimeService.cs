@@ -1,10 +1,8 @@
-﻿using System;
+﻿using Microsoft.AspNet.SignalR.Client;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
+using System.Drawing;
 using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR.Client;
 
 namespace Ryora.Client.Services.Implementation
 {
@@ -18,12 +16,12 @@ namespace Ryora.Client.Services.Implementation
         private const string HostUrl = "http://ryora.azurewebsites.net";
 #endif
         private bool IsStarted = false;
-        public SignalRRealtimeService()
+        public SignalRRealtimeService(short channel)
         {
-            var queryString = new Dictionary<string, string> {{"Channel", "1"}};
+            var queryString = new Dictionary<string, string> { { "Channel", channel.ToString() } };
             HubConnection = new HubConnection(HostUrl, queryString);
             HubProxy = HubConnection.CreateHubProxy("RemoteAssistHub");
-            
+
             HubConnection.Start();
         }
 
@@ -35,20 +33,29 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task SendImage(short channel, int frame, byte[] image)
         {
-            if (!IsStarted) return;
+            if (!GoodConnection) return;
             await HubProxy.Invoke("SendImage", channel, frame, image);
+        }
+
+        public async Task SendImage(short channel, int frame, int x, int y, int width, int height, byte[] image)
+        {
+            if (!GoodConnection) return;
+            await HubProxy.Invoke("SendImageFragment", channel, frame, x, y, width, height, image);
         }
 
         public async Task SendMouseCoords(short channel, double x, double y)
         {
-            if (!IsStarted) return;
+            if (!GoodConnection) return;
             await HubProxy.Invoke("SendMouseCoords", channel, x, y);
         }
 
         public async Task Sharing(short channel, bool isSharing)
         {
-            if (!IsStarted) return;
+            if (!GoodConnection) return;
             await HubProxy.Invoke("Share", channel, isSharing);
         }
+
+        private bool GoodConnection => (IsStarted && HubConnection.State == ConnectionState.Connected);
+        public event EventHandler<Rectangle> MissedFragmentEvent;
     }
 }

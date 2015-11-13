@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,20 @@ namespace Ryora.Tech.Models
         {
             Frame = frame;
             Image = image;
+        }
+    }
+
+    public class NewImageFragmentEventArgs : EventArgs
+    {
+        public byte[] Image { get; set; }
+        public int Frame { get; set; }
+        public Rectangle ImagePosition { get; set; }
+
+        public NewImageFragmentEventArgs(int frame, byte[] image, Rectangle imagePosition)
+        {
+            Frame = frame;
+            Image = image;
+            ImagePosition = imagePosition;
         }
     }
 

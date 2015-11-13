@@ -32,21 +32,27 @@ namespace Ryora.Server.Hubs
             await base.OnConnected();
         }
 
-        public async Task Share(string channel, bool isSharing)
+        public async Task Share(short channel, bool isSharing)
         {
-            await Clients.Group(channel).Share(isSharing);
+            await Clients.Group(channel.ToString()).Share(isSharing);
         }
 
-        public async Task SendImage(string channel, int frame, string image)
+        public async Task SendImage(short channel, int frame, byte[] image)
         {
-            await Clients.Group(channel).NewImage(frame, image);
-            await Clients.Group(DataChannel).MoreData(channel, (Math.Floor((double)image.Length / 3) + 1) * 4 + 1 + channel.Length * 8 + 32);
+            await Clients.Group(channel.ToString()).NewImage(frame, image);
+            await Clients.Group(DataChannel).MoreData(channel, image.Length * 8 + 1 + 16 + 32);
         }
 
-        public async Task SendMouseCoords(string channel, double x, double y)
+        public async Task SendImageFragment(short channel, int frame, int x, int y, int width, int height, byte[] image)
         {
-            await Clients.Group(channel).MouseMove(x, y);
-            await Clients.Group(DataChannel).MoreData(channel, 128 + channel.Length*8);
+            await Clients.Group(channel.ToString()).NewImageFragment(frame, x, y, width, height, image);
+            await Clients.Group(DataChannel).MoreData(channel, image.Length * 8 + 16 + 32 + 32 + 32 + 32 + 32);
+        }
+
+        public async Task SendMouseCoords(short channel, double x, double y)
+        {
+            await Clients.Group(channel.ToString()).MouseMove(x, y);
+            await Clients.Group(DataChannel).MoreData(channel, 128 + 16);
         }
     }
 }

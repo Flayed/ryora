@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -17,9 +18,21 @@ namespace Ryora.UdpServer
         public static UdpClient Client => _client ?? (_client = new UdpClient(Port));
         public static short ServerId = 42;
         private static readonly List<ConnectionRequest> ConnectionRequests = new List<ConnectionRequest>();
+        private static Stopwatch Sw = new Stopwatch();
+
         private static double BytesUsed { get; set; } = 0;
         private static double KilobytesUsed => Math.Round((double)BytesUsed / 1000, 2);
         private static double MegabytesUsed => Math.Round((double)BytesUsed / 1000000, 2);
+
+        private static double KilobytesPerSecond
+        {
+            get
+            {
+                if (Sw.IsRunning)
+                    return KilobytesUsed / Sw.Elapsed.TotalSeconds;
+                return 0;
+            }
+        }
 
         public static async Task Listen()
         {
@@ -29,7 +42,7 @@ namespace Ryora.UdpServer
                 var requestMessage = Messaging.ReceiveMessage(request.Buffer);
                 BytesUsed += request.Buffer.Length;
                 Console.SetCursorPosition(0,0);
-                Console.WriteLine($"Bytes Used: {BytesUsed}B {KilobytesUsed}KB {MegabytesUsed}MB");
+                Console.WriteLine($"Bytes Used: {BytesUsed}B {KilobytesUsed}KB {MegabytesUsed}MB         {KilobytesPerSecond} KB/s     ");
     
                 switch (requestMessage.Type)
                 {
@@ -81,12 +94,13 @@ namespace Ryora.UdpServer
 
         internal static async Task SendAcknowledgement(ConnectionRequest firstRequest, ConnectionRequest secondRequest)
         {
-            var message = Messaging.CreateMessage(MessageType.Acknowledge, ServerId, firstRequest.Channel, "Initializing Connection");
+            var message = Messaging.CreateMessage(MessageType.Acknowledge, ServerId, firstRequest.Channel, 0, 0, "Initializing Connection");
             await Client.SendAsync(message, message.Length, firstRequest.IpEndPoint);
             await Client.SendAsync(message, message.Length, secondRequest.IpEndPoint);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"  Sent Connection Acknowledgement to channel {firstRequest.Channel} {firstRequest.Id}({firstRequest.IpEndPoint}) and {secondRequest.Id}({secondRequest.IpEndPoint})");
             Console.ResetColor();
+            Sw.Start();
         }
     }
 }

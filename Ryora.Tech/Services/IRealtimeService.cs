@@ -9,6 +9,7 @@ namespace Ryora.Tech.Services
     interface IRealtimeService
     {
         event EventHandler NewImage;
+        event EventHandler NewImageFragment;
         event EventHandler MouseMove;
         event EventHandler Sharing;
 

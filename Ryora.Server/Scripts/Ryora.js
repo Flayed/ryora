@@ -18,7 +18,7 @@ $(function () {
         self.transmittedGb = ko.computed(function () {
             return (self.transmitted() / 1000000000).toFixed(2);
         }, self);
-        self.addTransmitted = function(data) {
+        self.addTransmitted = function (data) {
             self.transmitted(self.transmitted() + data);
         }
     };
@@ -48,7 +48,9 @@ $(function () {
                 self.channels.push(new dataUse(channel));
             },        
             moreData: function (channel, data) {
-                var chan = ko.utils.arrayFirst(self.channels(), function (ch) { return ch.channel === channel; });
+                var chan = ko.utils.arrayFirst(self.channels(), function (ch) {
+                    return ch.channel == channel;
+                });
                 if (!chan) return;
                 chan.addTransmitted(data);
             }        

@@ -68,9 +68,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Services\Implementation\BitBlitScreenshotService.cs" />
+    <Compile Include="Services\Implementation\BitmapCache.cs" />
     <Compile Include="Services\Implementation\UdpRealtimeService.cs" />
+    <Compile Include="Services\Implementation\VisualTreeScreenshotService.cs" />
     <Compile Include="Services\IRealtimeService.cs" />
     <Compile Include="Services\Implementation\SignalRRealtimeService.cs" />
+    <Compile Include="Services\IScreenshotService.cs" />
+    <Compile Include="TimedProcess.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
