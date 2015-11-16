@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Ryora.Udp;
+using System;
 using System.Drawing;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Channels;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using Ryora.Udp;
 
 namespace Ryora.Client.Services.Implementation
 {
@@ -77,6 +72,11 @@ namespace Ryora.Client.Services.Implementation
             var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, mId, 0, $"NewImage^{frame}^{image.Length}");
             await Client.SendAsync(message, message.Length, ServerEndPoint);
             await SendImageFragments(channel, mId, image);
+        }
+
+        public Task SendImage(short channel, int frame, Rectangle location, byte[] image)
+        {
+            return SendImage(channel, frame, location.X, location.Y, location.Width, location.Height, image);
         }
 
         public async Task SendImage(short channel, int frame, int x, int y, int width, int height, byte[] image)

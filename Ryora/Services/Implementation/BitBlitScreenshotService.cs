@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Ryora.Client.Models;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Windows.Media;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 namespace Ryora.Client.Services.Implementation
 {
@@ -102,6 +100,12 @@ namespace Ryora.Client.Services.Implementation
         [DllImport("gdi32.dll", EntryPoint = "BitBlt", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool BitBlt([In] IntPtr hdc, int nXDest, int nYDest, int nWidth, int nHeight, [In] IntPtr hdcSrc, int nXSrc, int nYSrc, TernaryRasterOperations dwRop);
+
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+        static extern int memcmp(IntPtr b1, IntPtr b2, long count);
+
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+        static unsafe extern int memcpy(byte* dest, byte* src, long count);
 
         /// <summary>
         ///     Specifies a raster-operation code. These codes define how the color data for the
@@ -204,33 +208,33 @@ namespace Ryora.Client.Services.Implementation
             Validate = 0x00200000,
         }
 
-        private readonly BitmapCache Cache;
-        private bool FirstHit { get; set; } = false;
+        private Bitmap PreviousScreen { get; set; }
 
         public BitBlitScreenshotService()
         {
-            Cache = new BitmapCache(6, 6, 1920, 1080);
+            PreviousScreen = null;
         }
 
-        public async Task<IEnumerable<CachedBitmap>> GetScreenshots()
+        public ScreenUpdate GetUpdate()
         {
-            if (!FirstHit) return await Cache.CheckBitmaps(TakeScreenshot);
-            FirstHit = true;
-            return new List<CachedBitmap>() { new CachedBitmap(0, 0, 1920, 1080) { Bitmap = TakeScreenshot() } };
+            var newScreenshot = TakeScreenshot();
+            if (PreviousScreen == null)
+            {
+                PreviousScreen = newScreenshot;
+                return new ScreenUpdate(0, 0, 1920, 1080, newScreenshot);
+            }
+
+            var difference = GetDifferenceRectangle(PreviousScreen, newScreenshot);
+            if (!difference.HasValue) return null;
+
+            PreviousScreen = newScreenshot;
+            var differenceBitmap = CropBitmap(newScreenshot, difference.Value);
+            return new ScreenUpdate(difference.Value, differenceBitmap);
         }
 
         public void ForceUpdate(Rectangle updateRectangle)
         {
-            Cache.ForceUpdate(updateRectangle);
-        }
-
-        public MemoryStream GetScreenshot(Visual target)
-        {
-            MemoryStream ms = new MemoryStream();
-            var screenshot = TakeScreenshot();
-            if (screenshot == null) return ms;
-            screenshot.Save(ms, ImageFormat.Png);
-            return ms;
+            //Cache.ForceUpdate(updateRectangle);
         }
 
         private Bitmap TakeScreenshot(Rectangle bounds)
@@ -272,6 +276,112 @@ namespace Ryora.Client.Services.Implementation
                 if (memoryDc != IntPtr.Zero)
                     DeleteDC(memoryDc);
             }
+        }
+
+        private unsafe Rectangle? GetDifferenceRectangle(Bitmap first, Bitmap second)
+        {
+            var fbmd = first.LockBits(new Rectangle(0, 0, first.Width, first.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var sbmd = second.LockBits(new Rectangle(0, 0, second.Width, second.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var rowLength = fbmd.Width * 4;
+
+            var minX = int.MaxValue;
+            var minY = -1;
+            var maxX = -1;
+            var maxY = -1;
+
+            try
+            {
+                for (var y = 0; y < first.Height && minY < 0; y++)
+                {
+                    byte* fp = (byte*)fbmd.Scan0 + (y * rowLength);
+                    byte* sp = (byte*)sbmd.Scan0 + (y * rowLength);
+
+                    if (memcmp((IntPtr)fp, (IntPtr)sp, rowLength) != 0)
+                    {
+                        minY = y;
+                    }
+                }
+
+                for (var y = first.Height - 1; y >= 0 && maxY < 0; y--)
+                {
+                    byte* fp = (byte*)fbmd.Scan0 + (y * rowLength);
+                    byte* sp = (byte*)sbmd.Scan0 + (y * rowLength);
+
+                    if (memcmp((IntPtr)fp, (IntPtr)sp, rowLength) != 0)
+                    {
+                        maxY = y;
+                    }
+                }
+                if (minY >= 0)
+                {
+                    for (var y = minY; y <= maxY; y++)
+                    {
+                        for (var x = 0; x < rowLength && x < minX; x++)
+                        {
+                            byte* fp = (byte*)fbmd.Scan0 + (y * rowLength);
+                            byte* sp = (byte*)sbmd.Scan0 + (y * rowLength);
+
+                            var d = (*(fp + x) ^ *(sp + x));
+                            if (d != 0 && x < minX)
+                            {
+                                minX = x;
+                            }
+                        }
+                        for (var x = rowLength - 1; x >= 0 && x > maxX; x--)
+                        {
+                            byte* fp = (byte*)fbmd.Scan0 + (y * rowLength);
+                            byte* sp = (byte*)sbmd.Scan0 + (y * rowLength);
+
+                            var d = (*(fp + x) ^ *(sp + x));
+                            if (d != 0 && x > maxX)
+                            {
+                                maxX = x;
+                            }
+                        }
+                        if (minX == 0 && maxX == fbmd.Width)
+                            break;
+                    }
+                }
+
+                minX = minX / 4;
+                maxX = maxX / 4;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Something bad happened: {ex.Message}");
+                return null;
+            }
+            finally
+            {
+                first.UnlockBits(fbmd);
+                second.UnlockBits(sbmd);
+            }
+
+            if (minY == -1) return null;
+
+            return new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        }
+
+        private Bitmap CropBitmap(Bitmap sourceImage, Rectangle rectangle)
+        {
+            var croppedImage = new Bitmap(rectangle.Width, rectangle.Height, PixelFormat.Format32bppArgb);
+
+            var sourceBitmapdata = sourceImage.LockBits(rectangle, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var croppedBitmapData = croppedImage.LockBits(new Rectangle(0, 0, rectangle.Width, rectangle.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+
+            unsafe
+            {
+                croppedBitmapData.Stride = sourceBitmapdata.Stride;
+                byte* sourceImagePointer = (byte*)sourceBitmapdata.Scan0;
+                byte* croppedImagePointer = (byte*)croppedBitmapData.Scan0;
+                memcpy(croppedImagePointer, sourceImagePointer,
+                       Math.Abs(croppedBitmapData.Stride) * rectangle.Height);
+            }
+
+            sourceImage.UnlockBits(sourceBitmapdata);
+            croppedImage.UnlockBits(croppedBitmapData);
+
+            return croppedImage;
         }
     }
 }

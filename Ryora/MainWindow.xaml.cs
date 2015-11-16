@@ -1,6 +1,5 @@
 ﻿using Ryora.Client.Services;
 using Ryora.Client.Services.Implementation;
-using System;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -28,15 +27,12 @@ namespace Ryora.Client
             RealtimeService = new UdpRealtimeService();
             //RealtimeService = new SignalRRealtimeService(Channel);
 
-            //ScreenshotService = new VisualTreeScreenshotService();
             ScreenshotService = new BitBlitScreenshotService();
-
 
             RealtimeService.MissedFragmentEvent += (s, r) =>
             {
                 ScreenshotService.ForceUpdate(r);
             };
-
 
             Task.Run(async () =>
             {
@@ -45,25 +41,15 @@ namespace Ryora.Client
 
             ScreenshotTimer = new TimedProcessor(100, async () =>
             {
-                var bmps = await ScreenshotService.GetScreenshots();
-                foreach (var bmp in bmps)
+                var update = ScreenshotService.GetUpdate();
+                if (update == null) return;
+
+                using (var ms = new MemoryStream())
                 {
-                    try
-                    {
-                        if (bmp?.Bitmap == null) continue;
-                        using (var ms = new MemoryStream())
-                        {
-                            bmp.Bitmap.Save(ms, GetEncoder(ImageFormat.Jpeg), JpgEncoderParameters);
-                            await
-                                RealtimeService.SendImage(Channel, Frame++, bmp.Bounds.X, bmp.Bounds.Y, bmp.Bounds.Width,
-                                    bmp.Bounds.Height,
-                                    ms.GetBuffer());
-                        }
-                    }
-                    catch
-                    {
-                        Console.WriteLine("OH NOES SOMETHING BAD HAPPENED");
-                    }
+                    update.Bitmap.Save(ms, GetEncoder(ImageFormat.Jpeg), JpgEncoderParameters);
+                    await
+                        RealtimeService.SendImage(Channel, Frame++, update.Location.X, update.Location.Y, update.Location.Width, update.Location.Height,
+                            ms.GetBuffer());
                 }
             });
 

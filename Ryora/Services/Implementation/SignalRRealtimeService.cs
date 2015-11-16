@@ -43,6 +43,11 @@ namespace Ryora.Client.Services.Implementation
             await HubProxy.Invoke("SendImageFragment", channel, frame, x, y, width, height, image);
         }
 
+        public Task SendImage(short channel, int frame, Rectangle location, byte[] image)
+        {
+            return SendImage(channel, frame, location.X, location.Y, location.Width, location.Height, image);
+        }
+
         public async Task SendMouseCoords(short channel, double x, double y)
         {
             if (!GoodConnection) return;
