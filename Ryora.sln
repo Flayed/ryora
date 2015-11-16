@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ryora.UdpServer", "Ryora.Ud
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ryora.Udp", "Ryora.Udp\Ryora.Udp.csproj", "{316C0AF6-F280-4281-A7E3-8E39024AD1EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ryora.ImageOptimization", "Ryora.ImageOptimization\Ryora.ImageOptimization.csproj", "{C7602B7C-D5B7-4AEC-BBDB-FA1537F0AD1C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,10 +39,6 @@ Global
 		{316C0AF6-F280-4281-A7E3-8E39024AD1EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{316C0AF6-F280-4281-A7E3-8E39024AD1EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{316C0AF6-F280-4281-A7E3-8E39024AD1EA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C7602B7C-D5B7-4AEC-BBDB-FA1537F0AD1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C7602B7C-D5B7-4AEC-BBDB-FA1537F0AD1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C7602B7C-D5B7-4AEC-BBDB-FA1537F0AD1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C7602B7C-D5B7-4AEC-BBDB-FA1537F0AD1C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

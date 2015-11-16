@@ -9,6 +9,7 @@ namespace Ryora.Client.Services.Implementation
 {
     public class BitBlitScreenshotService : IScreenshotService
     {
+        #region P/Invoke
         /// <summary>
         /// Receives a handle to the display device context (DC)
         /// </summary>
@@ -207,6 +208,7 @@ namespace Ryora.Client.Services.Implementation
             /// DCX_VALIDATE is identical to using the BeginPaint function.</summary>
             Validate = 0x00200000,
         }
+        #endregion  
 
         private Bitmap PreviousScreen { get; set; }
 
