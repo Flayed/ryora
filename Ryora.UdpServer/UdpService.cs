@@ -1,13 +1,11 @@
-﻿using System;
+﻿using Ryora.Udp;
+using Ryora.UdpServer.Models;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using Ryora.Udp;
-using Ryora.UdpServer.Models;
 
 namespace Ryora.UdpServer
 {
@@ -41,9 +39,9 @@ namespace Ryora.UdpServer
                 var request = await Client.ReceiveAsync();
                 var requestMessage = Messaging.ReceiveMessage(request.Buffer);
                 BytesUsed += request.Buffer.Length;
-                Console.SetCursorPosition(0,0);
+                Console.SetCursorPosition(0, 0);
                 Console.WriteLine($"Bytes Used: {BytesUsed}B {KilobytesUsed}KB {MegabytesUsed}MB         {KilobytesPerSecond} KB/s     ");
-    
+
                 switch (requestMessage.Type)
                 {
                     case MessageType.Connect:
@@ -61,7 +59,7 @@ namespace Ryora.UdpServer
                         Console.ResetColor();
                         if (channelConnections.Count() == 2)
                         {
-                            await SendAcknowledgement(channelConnections.ElementAt(0), channelConnections.ElementAt(1));                            
+                            await SendAcknowledgement(channelConnections.ElementAt(0), channelConnections.ElementAt(1));
                         }
                         break;
                     case MessageType.Disconnect:
@@ -71,6 +69,7 @@ namespace Ryora.UdpServer
                     case MessageType.Data:
                     case MessageType.DataFragment:
                     case MessageType.LastDataFragment:
+                        if (!Sw.IsRunning) Sw.Start();
                         await SendMessage(requestMessage);
                         break;
                 }
@@ -100,7 +99,6 @@ namespace Ryora.UdpServer
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"  Sent Connection Acknowledgement to channel {firstRequest.Channel} {firstRequest.Id}({firstRequest.IpEndPoint}) and {secondRequest.Id}({secondRequest.IpEndPoint})");
             Console.ResetColor();
-            Sw.Start();
         }
     }
 }

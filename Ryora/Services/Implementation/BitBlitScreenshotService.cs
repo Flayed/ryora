@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Ryora.Client.Services.Implementation
 {
@@ -208,15 +205,18 @@ namespace Ryora.Client.Services.Implementation
         }
 
         private readonly BitmapCache Cache;
+        private bool FirstHit { get; set; } = false;
 
         public BitBlitScreenshotService()
         {
-            Cache = new BitmapCache(2, 2, 1920, 1080);
+            Cache = new BitmapCache(6, 6, 1920, 1080);
         }
 
         public async Task<IEnumerable<CachedBitmap>> GetScreenshots()
         {
-            return await Cache.CheckBitmaps(TakeScreenshot);
+            if (!FirstHit) return await Cache.CheckBitmaps(TakeScreenshot);
+            FirstHit = true;
+            return new List<CachedBitmap>() { new CachedBitmap(0, 0, 1920, 1080) { Bitmap = TakeScreenshot() } };
         }
 
         public void ForceUpdate(Rectangle updateRectangle)
@@ -251,6 +251,7 @@ namespace Ryora.Client.Services.Implementation
                 var oldBitmap = SelectObject(memoryDc, hBitmap);
 
                 BitBlt(memoryDc, 0, 0, screenWidth, screenHeight, screenDc, x, y, TernaryRasterOperations.SRCCOPY);
+
                 hBitmap = SelectObject(memoryDc, oldBitmap);
 
                 var bmp = Image.FromHbitmap(hBitmap);

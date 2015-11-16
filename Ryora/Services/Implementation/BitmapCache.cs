@@ -1,22 +1,23 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms.VisualStyles;
-using System.Windows.Media.Imaging;
 
 namespace Ryora.Client.Services.Implementation
 {
     public class BitmapCache
-    {    
+    {
         [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern int memcmp(IntPtr b1, IntPtr b2, long count);
+
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+        static unsafe extern int memcpy(byte* dest, byte* src, long count);
+
+        private const int TimeToLive = 5;
 
         public int Horizontal { get; set; }
         public int Vertical { get; set; }
@@ -39,29 +40,32 @@ namespace Ryora.Client.Services.Implementation
             }
         }
 
-        public async Task<IEnumerable<CachedBitmap>>  CheckBitmaps(Func<Rectangle, Bitmap> getBitmapFunc)
+        public async Task<IEnumerable<CachedBitmap>> CheckBitmaps(Func<Rectangle, Bitmap> getBitmapFunc)
         {
             ConcurrentBag<CachedBitmap> dirtyBitmaps = new ConcurrentBag<CachedBitmap>();
-            //List<CachedBitmap> dirtyBitmaps = new List<CachedBitmap>();
-            Parallel.ForEach(Cache, (cachedBitmap) =>
+            using (var screenShot = getBitmapFunc(new Rectangle(0, 0, 1920, 1080)))
             {
-                try
+                //List<CachedBitmap> dirtyBitmaps = new List<CachedBitmap>();
+                Cache.ForEach((cachedBitmap) =>
                 {
-                    var target = getBitmapFunc(cachedBitmap.Bounds);
-                    if (CompareBitmaps(cachedBitmap.Bitmap, target))
+                    try
                     {
-                        if (--cachedBitmap.TimeToLive > 0)                        
-                            return;
+                        var target = CropBitmap(screenShot, cachedBitmap.Bounds);
+                        if (CompareBitmaps(cachedBitmap.Bitmap, target))
+                        {
+                            if (--cachedBitmap.TimeToLive > 0)
+                                return;
+                        }
+                        cachedBitmap.Bitmap = target;
+                        cachedBitmap.TimeToLive = TimeToLive;
+                        dirtyBitmaps.Add(cachedBitmap);
                     }
-                    cachedBitmap.Bitmap = target;
-                    cachedBitmap.TimeToLive = 100;
-                    dirtyBitmaps.Add(cachedBitmap);                    
-                }
-                catch
-                {
-                    Console.WriteLine("Something bad happend");
-                }
-            });
+                    catch
+                    {
+                        Console.WriteLine("Something bad happend");
+                    }
+                });
+            }
             return dirtyBitmaps;
         }
 
@@ -72,9 +76,28 @@ namespace Ryora.Client.Services.Implementation
             cachedBitmap.TimeToLive = 0;
         }
 
+        private Bitmap CropBitmap(Bitmap sourceImage, Rectangle rectangle)
+        {
+            const int BPP = 4; //4 Bpp = 32 bits; argb
+            var sourceBitmapdata = sourceImage.LockBits(rectangle, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var croppedImage = new Bitmap(rectangle.Width, rectangle.Height, PixelFormat.Format32bppArgb);
+            var croppedBitmapData = croppedImage.LockBits(new Rectangle(0, 0, rectangle.Width, rectangle.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            unsafe
+            {
+                croppedBitmapData.Stride = sourceBitmapdata.Stride;
+                byte* sourceImagePointer = (byte*)sourceBitmapdata.Scan0.ToPointer();
+                byte* croppedImagePointer = (byte*)croppedBitmapData.Scan0.ToPointer();
+                memcpy(croppedImagePointer, sourceImagePointer,
+                       Math.Abs(croppedBitmapData.Stride) * rectangle.Height);
+            }
+            sourceImage.UnlockBits(sourceBitmapdata);
+            croppedImage.UnlockBits(croppedBitmapData);
+            return croppedImage;
+        }
+
         unsafe private bool CompareBitmaps(Bitmap left, Bitmap right)
         {
-            if (left == null || right == null) return false;            
+            if (left == null || right == null) return false;
             //if (Equals(left, right)) return true;
 
             bool result = true;
@@ -100,7 +123,7 @@ namespace Ryora.Client.Services.Implementation
             {
                 result = false;
             }
-            
+
             return result;
         }
     }
@@ -114,7 +137,7 @@ namespace Ryora.Client.Services.Implementation
         public CachedBitmap(int x, int y, int width, int height)
         {
             Bounds = new Rectangle(x, y, width, height);
-            TimeToLive = 100;
+            TimeToLive = 5;
         }
-    }    
+    }
 }
