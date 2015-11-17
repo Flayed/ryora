@@ -373,11 +373,17 @@ namespace Ryora.Client.Services.Implementation
 
             unsafe
             {
-                croppedBitmapData.Stride = sourceBitmapdata.Stride;
                 byte* sourceImagePointer = (byte*)sourceBitmapdata.Scan0;
                 byte* croppedImagePointer = (byte*)croppedBitmapData.Scan0;
-                memcpy(croppedImagePointer, sourceImagePointer,
-                       Math.Abs(croppedBitmapData.Stride) * rectangle.Height);
+
+                var width = rectangle.Width * 4;
+
+                for (var y = 0; y < rectangle.Height; y++)
+                {
+                    memcpy(croppedImagePointer, sourceImagePointer, width);
+                    sourceImagePointer += sourceBitmapdata.Stride;
+                    croppedImagePointer += croppedBitmapData.Stride;
+                }
             }
 
             sourceImage.UnlockBits(sourceBitmapdata);
