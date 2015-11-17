@@ -24,6 +24,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -65,9 +66,11 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Models\EventArgs.cs" />
+    <Compile Include="Services\Implementation\ScreenshotService.cs" />
     <Compile Include="Services\Implementation\SignalRRealtimeService.cs" />
     <Compile Include="Services\Implementation\UdpRealtimeService.cs" />
     <Compile Include="Services\IRealtimeService.cs" />
+    <Compile Include="Services\IScreenshotService.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

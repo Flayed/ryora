@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Technician View" Height="350" Width="525">
     <Canvas Name="Canvas">
-        <Image Name="Screenshot" Stretch="Fill"/>
+        <Image Name="Screenshot" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <Image Name="MousePointer" Width="10" Height="18" Visibility="Hidden"></Image>
         <Rectangle Name="PausedOverlay" Stretch="Fill" Fill="#AA454545" Width="{Binding ActualWidth, ElementName=window, Mode=OneWay}" Height="{Binding ActualHeight, ElementName=window, Mode=OneWay}" Visibility="Hidden" />
         <TextBlock Name="PausedText" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Width="{Binding ActualWidth, ElementName=window, Mode=OneWay}" Margin="0,100,0,4" FontWeight="Bold" Visibility="Hidden" Foreground="White">

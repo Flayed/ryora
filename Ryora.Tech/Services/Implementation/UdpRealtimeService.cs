@@ -1,16 +1,13 @@
-﻿using System;
+﻿using Ryora.Tech.Models;
+using Ryora.Udp;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Authentication.ExtendedProtection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Ryora.Tech.Models;
-using Ryora.Udp;
 
 namespace Ryora.Tech.Services.Implementation
 {
@@ -46,7 +43,7 @@ namespace Ryora.Tech.Services.Implementation
         public UdpRealtimeService(short channel)
         {
             ConnectionId = 2; // (short)(new Random().Next(short.MinValue, short.MaxValue));
-            var missedFragmentTimer = new System.Timers.Timer(5000);
+            var missedFragmentTimer = new System.Timers.Timer(1000);
             missedFragmentTimer.Elapsed += async (s, e) =>
             {
                 var missedFragments =
@@ -56,7 +53,7 @@ namespace Ryora.Tech.Services.Implementation
                     var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"MissedFragment^{missedFragment}");
                     await Client.SendAsync(message, message.Length, ServerEndPoint);
                     MessageFragments.Remove(missedFragment);
-                }                
+                }
             };
         }
 
@@ -129,6 +126,7 @@ namespace Ryora.Tech.Services.Implementation
                                     else
                                         NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.Frame, buffer));
 
+                                    MessageFragments.Remove(imageFragment);
                                 }
                             }
                             catch (Exception ex)

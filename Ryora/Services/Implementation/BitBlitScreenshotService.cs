@@ -1,5 +1,6 @@
 ﻿using Ryora.Client.Models;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -210,28 +211,86 @@ namespace Ryora.Client.Services.Implementation
         }
         #endregion  
 
-        private Bitmap PreviousScreen { get; set; }
+        private List<ScreenUpdate> ScreenUpdateCache = new List<ScreenUpdate>();
+        private bool FirstRun { get; set; } = true;
+
 
         public BitBlitScreenshotService()
         {
-            PreviousScreen = null;
+            var horizontalRectangles = 2;
+            var verticalRectangles = 2;
+            var screenWidth = 1920;
+            var screenHeight = 1080;
+
+            var rectangleWidth = screenWidth / horizontalRectangles;
+            var rectangleHeight = screenHeight / verticalRectangles;
+
+            for (var x = 0; x < screenWidth; x += rectangleWidth)
+            {
+                for (var y = 0; y < screenHeight; y += rectangleHeight)
+                {
+                    ScreenUpdateCache.Add(new ScreenUpdate(x, y, rectangleWidth, rectangleHeight, null));
+                }
+            }
+        }
+
+        public IEnumerable<ScreenUpdate> GetUpdates()
+        {
+            var screenUpdates = new List<ScreenUpdate>();
+            var newScreenshot = TakeScreenshot();
+
+            if (FirstRun)
+            {
+                screenUpdates.Add(new ScreenUpdate(0, 0, newScreenshot.Width, newScreenshot.Height, (Bitmap)newScreenshot.Clone()));
+            }
+
+            foreach (var screenUpdate in ScreenUpdateCache)
+            {
+                using (var newScreenSegment = CropBitmap(newScreenshot, screenUpdate.Location))
+                {
+                    if (screenUpdate.Bitmap == null)
+                    {
+                        screenUpdate.Bitmap = (Bitmap)newScreenSegment.Clone();
+                        if (!FirstRun)
+                            screenUpdates.Add(screenUpdate);
+                        continue;
+                    }
+                    var differenceRectangle = GetDifferenceRectangle(newScreenSegment, screenUpdate.Bitmap);
+                    if (!differenceRectangle.HasValue) continue;
+                    ResetScreenUpdate(screenUpdate, newScreenSegment);
+                    var croppedBitmap = CropBitmap(screenUpdate.Bitmap, differenceRectangle.Value);
+                    screenUpdates.Add(
+                        new ScreenUpdate(TranslateRectangle(screenUpdate.Location, differenceRectangle.Value),
+                            croppedBitmap));
+                }
+            }
+            newScreenshot.Dispose();
+            FirstRun = false;
+            return screenUpdates;
+        }
+
+        private static void ResetScreenUpdate(ScreenUpdate screenUpdate, Bitmap newScreenSegment)
+        {
+            screenUpdate.Bitmap.Dispose();
+            screenUpdate.Bitmap = (Bitmap)newScreenSegment.Clone();
         }
 
         public ScreenUpdate GetUpdate()
         {
-            var newScreenshot = TakeScreenshot();
-            if (PreviousScreen == null)
-            {
-                PreviousScreen = newScreenshot;
-                return new ScreenUpdate(0, 0, 1920, 1080, newScreenshot);
-            }
+            //var newScreenshot = TakeScreenshot();
+            //if (PreviousScreen == null)
+            //{
+            //    PreviousScreen = newScreenshot;
+            //    return new ScreenUpdate(0, 0, 1920, 1080, newScreenshot);
+            //}
 
-            var difference = GetDifferenceRectangle(PreviousScreen, newScreenshot);
-            if (!difference.HasValue) return null;
+            //var difference = GetDifferenceRectangle(PreviousScreen, newScreenshot);
+            //if (!difference.HasValue) return null;
 
-            PreviousScreen = newScreenshot;
-            var differenceBitmap = CropBitmap(newScreenshot, difference.Value);
-            return new ScreenUpdate(difference.Value, differenceBitmap);
+            //PreviousScreen = newScreenshot;
+            //var differenceBitmap = CropBitmap(newScreenshot, difference.Value);
+            //return new ScreenUpdate(difference.Value, differenceBitmap);
+            return null;
         }
 
         public void ForceUpdate(Rectangle updateRectangle)
@@ -390,6 +449,11 @@ namespace Ryora.Client.Services.Implementation
             croppedImage.UnlockBits(croppedBitmapData);
 
             return croppedImage;
+        }
+
+        private Rectangle TranslateRectangle(Rectangle originalRectangle, Rectangle croppedRectangle)
+        {
+            return new Rectangle(originalRectangle.X + croppedRectangle.X, originalRectangle.Y + croppedRectangle.Y, croppedRectangle.Width, croppedRectangle.Height);
         }
     }
 }
