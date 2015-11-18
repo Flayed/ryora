@@ -84,7 +84,7 @@ namespace Ryora.Client.Services.Implementation
             }
         }
 
-        public async Task SendMouseCoords(short channel, int x, int y)
+        public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight)
         {
             var message = Messaging.CreateMessage(new MouseMessage(x, y, 1920, 1080), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);

@@ -78,7 +78,7 @@ namespace Ryora.Client
             {
                 if (!IsStreaming || MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
                 MouseMoveThrottleTimer.Restart();
-                await RealtimeService.SendMouseCoords(Channel, e.X, e.Y);
+                await RealtimeService.SendMouseCoords(Channel, e.X, e.Y, 1920, 1080);
             };
         }
 

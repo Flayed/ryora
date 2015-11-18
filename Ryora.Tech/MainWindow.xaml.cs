@@ -57,8 +57,12 @@ namespace Ryora.Tech
                 if (ea == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    var x = ea.X - this.window.ActualWidth / 2;
-                    var y = ea.Y - this.window.ActualHeight / 2;
+                    if (!Screenshot.IsInitialized) return;
+                    double tx = Screenshot.ActualWidth / ea.ScreenWidth;
+                    double ty = Screenshot.ActualHeight / ea.ScreenHeight;
+
+                    double x = ((double)ea.X * tx - (double)Screenshot.ActualWidth / 2) + 5;
+                    double y = ((double)ea.Y * ty - (double)Screenshot.ActualHeight / 2) + 9;
 
                     if (!MousePointer.IsVisible) MousePointer.Visibility = Visibility.Visible;
 
