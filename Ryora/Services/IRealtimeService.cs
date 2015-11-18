@@ -6,7 +6,7 @@ namespace Ryora.Client.Services
 {
     public interface IRealtimeService
     {
-        Task StartConnection(short channel);
+        Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel);
         Task SendImage(short channel, int x, int y, int width, int height, byte[] image);
         Task SendImage(short channel, Rectangle location, byte[] image);

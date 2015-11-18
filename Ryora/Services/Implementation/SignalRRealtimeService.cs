@@ -25,7 +25,7 @@ namespace Ryora.Client.Services.Implementation
             HubConnection.Start();
         }
 
-        public async Task StartConnection(short channel)
+        public async Task StartConnection(short channel, int screenWidth, int screenHeight)
         {
             await HubConnection.Start();
             IsStarted = true;

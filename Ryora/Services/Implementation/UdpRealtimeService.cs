@@ -32,9 +32,9 @@ namespace Ryora.Client.Services.Implementation
             ConnectionId = 1;
         }
 
-        public async Task StartConnection(short channel)
+        public async Task StartConnection(short channel, int screenWidth, int screenHeight)
         {
-            var connectMessage = Messaging.CreateMessage(MessageType.Connect, ConnectionId, channel, MessageId);
+            var connectMessage = Messaging.CreateMessage(new ConnectMessage(screenWidth, screenHeight), ConnectionId, channel, MessageId);
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
@@ -86,7 +86,7 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight)
         {
-            var message = Messaging.CreateMessage(new MouseMessage(x, y, 1920, 1080), ConnectionId, channel, MessageId);
+            var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 

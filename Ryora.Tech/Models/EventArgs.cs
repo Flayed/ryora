@@ -40,4 +40,16 @@ namespace Ryora.Tech.Models
             IsSharing = isSharing;
         }
     }
+
+    public class ClientResolutionChangedEventArgs : EventArgs
+    {
+        public short ScreenWidth { get; set; }
+        public short ScreenHeight { get; set; }
+
+        public ClientResolutionChangedEventArgs(short screenWidth, short screenHeight)
+        {
+            ScreenWidth = screenWidth;
+            ScreenHeight = screenHeight;
+        }
+    }
 }

@@ -22,6 +22,7 @@ namespace Ryora.Client
         internal readonly long MouseMoveThrottle = 50;
         internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
         internal short Channel = 1;
+
         private bool DebugText { get; set; } = true;
 
         private IKeyboardMouseEvents GlobalKeyboardMouseHook;
@@ -45,7 +46,7 @@ namespace Ryora.Client
 
             Task.Run(async () =>
             {
-                await RealtimeService.StartConnection(Channel);
+                await RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
             });
 
             ScreenshotTimer = new TimedProcessor(100, async () =>
@@ -78,7 +79,7 @@ namespace Ryora.Client
             {
                 if (!IsStreaming || MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
                 MouseMoveThrottleTimer.Restart();
-                await RealtimeService.SendMouseCoords(Channel, e.X, e.Y, 1920, 1080);
+                await RealtimeService.SendMouseCoords(Channel, e.X, e.Y, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
             };
         }
 

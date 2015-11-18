@@ -20,8 +20,9 @@ namespace Ryora.Tech
     {
         private static int LastFrame { get; set; } = 0;
         private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
-        //private static Bitmap ScreenBitmap = new Bitmap(1920, 1080);
+
         private static short Channel { get; } = 1;
+
         private readonly IRealtimeService RealtimeService;
         private readonly IScreenshotService ScreenshotService;
 
@@ -29,10 +30,18 @@ namespace Ryora.Tech
         public MainWindow()
         {
             InitializeComponent();
+
             MousePointer.Source = GetMousePointerImage();
             //RealtimeService = new SignalRRealtimeService(Channel);
             RealtimeService = new UdpRealtimeService(Channel);
             ScreenshotService = new ScreenshotService();
+
+            RealtimeService.ClientResolutionChanged += (o, e) =>
+            {
+                var ea = e as ClientResolutionChangedEventArgs;
+                if (ea?.ScreenWidth == 0 || ea?.ScreenHeight == 0) return;
+                ScreenshotService.SetBitmapSize(ea.ScreenWidth, ea.ScreenHeight);
+            };
 
             RealtimeService.NewImage += (o, e) =>
             {
@@ -42,7 +51,9 @@ namespace Ryora.Tech
                 {
                     try
                     {
-                        Screenshot.Source = ScreenshotService.ProcessBitmap(ea.Location, ea.Image);
+                        var source = ScreenshotService.ProcessBitmap(ea.Location, ea.Image);
+                        if (source == null) return;
+                        Screenshot.Source = source;
                     }
                     catch (Exception ex)
                     {
@@ -99,7 +110,7 @@ namespace Ryora.Tech
 
             Task.Run(async () =>
             {
-                await RealtimeService.StartConnection(Channel);
+                await RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Title = $"Technician View [Connection Type: {RealtimeService.Transport}]";

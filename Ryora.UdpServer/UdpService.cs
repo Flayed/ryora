@@ -1,4 +1,5 @@
 ﻿using Ryora.Udp;
+using Ryora.Udp.Messages;
 using Ryora.UdpServer.Models;
 using System;
 using System.Collections.Generic;
@@ -57,8 +58,9 @@ namespace Ryora.UdpServer
                 switch (requestMessage.Type)
                 {
                     case MessageType.Connect:
+                        var connectionMessage = new ConnectMessage(requestMessage.Payload);
                         var connectionRequest = new ConnectionRequest(request.RemoteEndPoint, requestMessage.ConnectionId,
-                            requestMessage.Channel);
+                            requestMessage.Channel, connectionMessage.ScreenWidth, connectionMessage.ScreenHeight);
                         if (ConnectionRequests.Any(cr => cr.Id.Equals(connectionRequest.Id)))
                         {
                             ConnectionRequests.Remove(ConnectionRequests.First(cr => cr.Id.Equals(connectionRequest.Id)));
@@ -109,8 +111,9 @@ namespace Ryora.UdpServer
 
         internal static async Task SendAcknowledgement(ConnectionRequest firstRequest, ConnectionRequest secondRequest)
         {
-            var message = Messaging.CreateMessage(MessageType.Acknowledge, ServerId, firstRequest.Channel, 0, "Initializing Connection");
+            var message = Messaging.CreateMessage(new AcknowledgeMessage(secondRequest.ScreenWidth, secondRequest.ScreenHeight), ServerId, firstRequest.Channel, 0);
             await Client.SendAsync(message, message.Length, firstRequest.IpEndPoint);
+            message = Messaging.CreateMessage(new AcknowledgeMessage(firstRequest.ScreenWidth, firstRequest.ScreenHeight), ServerId, secondRequest.Channel, 0);
             await Client.SendAsync(message, message.Length, secondRequest.IpEndPoint);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.SetCursorPosition(0, ++ConsoleLine);

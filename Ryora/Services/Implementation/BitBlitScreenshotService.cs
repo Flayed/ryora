@@ -109,6 +109,13 @@ namespace Ryora.Client.Services.Implementation
         [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         static unsafe extern int memcpy(byte* dest, byte* src, long count);
 
+        [DllImport("user32.dll")]
+        static extern int GetSystemMetrics(SystemMetric smIndex);
+        public enum SystemMetric
+        {
+            SM_CXSCREEN = 0,  // 0x00
+            SM_CYSCREEN = 1,  // 0x01
+        }
         /// <summary>
         ///     Specifies a raster-operation code. These codes define how the color data for the
         ///     source rectangle is to be combined with the color data for the destination
@@ -214,20 +221,45 @@ namespace Ryora.Client.Services.Implementation
         private List<ScreenUpdate> ScreenUpdateCache = new List<ScreenUpdate>();
         private bool FirstRun { get; set; } = true;
 
+        private int? _screenWidth = null;
+
+        public int ScreenWidth
+        {
+            get
+            {
+                if (!_screenWidth.HasValue)
+                {
+                    _screenWidth = GetSystemMetrics(SystemMetric.SM_CXSCREEN);
+                }
+                return _screenWidth.Value;
+            }
+        }
+
+        private int? _screenHeight = null;
+
+        public int ScreenHeight
+        {
+            get
+            {
+                if (!_screenHeight.HasValue)
+                {
+                    _screenHeight = GetSystemMetrics(SystemMetric.SM_CYSCREEN);
+                }
+                return _screenHeight.Value;
+            }
+        }
 
         public BitBlitScreenshotService()
         {
             var horizontalRectangles = 2;
             var verticalRectangles = 2;
-            var screenWidth = 1920;
-            var screenHeight = 1080;
 
-            var rectangleWidth = screenWidth / horizontalRectangles;
-            var rectangleHeight = screenHeight / verticalRectangles;
+            var rectangleWidth = ScreenWidth / horizontalRectangles;
+            var rectangleHeight = ScreenHeight / verticalRectangles;
 
-            for (var x = 0; x < screenWidth; x += rectangleWidth)
+            for (var x = 0; x < ScreenWidth; x += rectangleWidth)
             {
-                for (var y = 0; y < screenHeight; y += rectangleHeight)
+                for (var y = 0; y < ScreenHeight; y += rectangleHeight)
                 {
                     ScreenUpdateCache.Add(new ScreenUpdate(x, y, rectangleWidth, rectangleHeight, null));
                 }
@@ -303,8 +335,10 @@ namespace Ryora.Client.Services.Implementation
             return TakeScreenshot(bounds.X, bounds.Y, bounds.Width, bounds.Height);
         }
 
-        private Bitmap TakeScreenshot(int x = 0, int y = 0, int screenWidth = 1920, int screenHeight = 1080)
+        private Bitmap TakeScreenshot(int x = 0, int y = 0, int? screenWidth = null, int? screenHeight = null)
         {
+            if (screenWidth == null) screenWidth = ScreenWidth;
+            if (screenHeight == null) screenHeight = ScreenHeight;
             IntPtr screenDc = IntPtr.Zero;
             IntPtr memoryDc = IntPtr.Zero;
             try
@@ -312,10 +346,10 @@ namespace Ryora.Client.Services.Implementation
                 screenDc = GetDCEx(IntPtr.Zero, IntPtr.Zero, 0);
                 memoryDc = CreateCompatibleDC(screenDc);
 
-                var hBitmap = CreateCompatibleBitmap(screenDc, screenWidth, screenHeight);
+                var hBitmap = CreateCompatibleBitmap(screenDc, screenWidth.Value, screenHeight.Value);
                 var oldBitmap = SelectObject(memoryDc, hBitmap);
 
-                BitBlt(memoryDc, 0, 0, screenWidth, screenHeight, screenDc, x, y, TernaryRasterOperations.SRCCOPY);
+                BitBlt(memoryDc, 0, 0, screenWidth.Value, screenHeight.Value, screenDc, x, y, TernaryRasterOperations.SRCCOPY);
 
                 hBitmap = SelectObject(memoryDc, oldBitmap);
 

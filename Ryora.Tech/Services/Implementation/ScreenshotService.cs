@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
@@ -8,15 +9,56 @@ namespace Ryora.Tech.Services.Implementation
 {
     public class ScreenshotService : IScreenshotService
     {
-        private Bitmap PrimaryBitmap { get; set; }
+        [DllImport("user32.dll")]
+        static extern int GetSystemMetrics(SystemMetric smIndex);
+        public enum SystemMetric
+        {
+            SM_CXSCREEN = 0,  // 0x00
+            SM_CYSCREEN = 1,  // 0x01
+        }
+
+        private int? _screenWidth = null;
+
+        public int ScreenWidth
+        {
+            get
+            {
+                if (!_screenWidth.HasValue)
+                {
+                    _screenWidth = GetSystemMetrics(SystemMetric.SM_CXSCREEN);
+                }
+                return _screenWidth.Value;
+            }
+        }
+
+        private int? _screenHeight = null;
+
+        public int ScreenHeight
+        {
+            get
+            {
+                if (!_screenHeight.HasValue)
+                {
+                    _screenHeight = GetSystemMetrics(SystemMetric.SM_CYSCREEN);
+                }
+                return _screenHeight.Value;
+            }
+        }
+
+        private Bitmap PrimaryBitmap { get; set; } = null;
 
         public ScreenshotService()
         {
-            PrimaryBitmap = new Bitmap(1920, 1080, PixelFormat.Format32bppArgb);
+        }
+
+        public void SetBitmapSize(short width, short height)
+        {
+            PrimaryBitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         }
 
         public BitmapSource ProcessBitmap(Rectangle imagePosition, byte[] imageData)
         {
+            if (PrimaryBitmap == null) return null;
             using (var ms = new MemoryStream(imageData))
             {
                 using (var bmp = new Bitmap(ms))

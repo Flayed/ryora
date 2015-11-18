@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MessageConverter.cs" />
+    <Compile Include="Messages\AcknowledgeMessage.cs" />
+    <Compile Include="Messages\ConnectMessage.cs" />
     <Compile Include="Messages\ImageMessage.cs" />
     <Compile Include="Messages\IMessage.cs" />
     <Compile Include="Messages\MouseMessage.cs" />

@@ -8,8 +8,9 @@ namespace Ryora.Tech.Services
         event EventHandler NewImage;
         event EventHandler MouseMove;
         event EventHandler Sharing;
+        event EventHandler ClientResolutionChanged;
 
-        Task StartConnection(short channel);
+        Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel);
         string Transport { get; }
     }

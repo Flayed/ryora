@@ -18,7 +18,7 @@ namespace Ryora.Tech.Services.Implementation
 #endif
 
         public event EventHandler NewImage;
-        public event EventHandler NewImageFragment;
+        public event EventHandler ClientResolutionChanged;
         public event EventHandler MouseMove;
         public event EventHandler Sharing;
 
@@ -44,7 +44,7 @@ namespace Ryora.Tech.Services.Implementation
             });
         }
 
-        public async Task StartConnection(short channel)
+        public async Task StartConnection(short channel, int screenWidth, int screenHeight)
         {
 
             await HubConnection.Start();

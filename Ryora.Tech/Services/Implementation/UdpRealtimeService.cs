@@ -39,6 +39,7 @@ namespace Ryora.Tech.Services.Implementation
         public event EventHandler NewImage;
         public event EventHandler MouseMove;
         public event EventHandler Sharing;
+        public event EventHandler ClientResolutionChanged;
 
         public UdpRealtimeService(short channel)
         {
@@ -57,9 +58,9 @@ namespace Ryora.Tech.Services.Implementation
             };
         }
 
-        public async Task StartConnection(short channel)
+        public async Task StartConnection(short channel, int screenWidth, int screenHeight)
         {
-            var connectMessage = Messaging.CreateMessage(MessageType.Connect, ConnectionId, channel, MessageId, "Initiating Connection");
+            var connectMessage = Messaging.CreateMessage(new ConnectMessage(screenWidth, screenHeight), ConnectionId, channel, MessageId);
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
@@ -70,7 +71,8 @@ namespace Ryora.Tech.Services.Implementation
                     switch (message.Type)
                     {
                         case MessageType.Acknowledge:
-                            Console.WriteLine("Connected and good to go!");
+                            var acknowledgeMessage = new AcknowledgeMessage(message.Payload);
+                            ClientResolutionChanged?.Invoke(this, new ClientResolutionChangedEventArgs(acknowledgeMessage.ScreenWidth, acknowledgeMessage.ScreenHeight));
                             IsConnected = true;
                             break;
                         case MessageType.Image:
