@@ -1,47 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Ryora.Tech.Models
 {
     public class NewImageEventArgs : EventArgs
     {
+        public Rectangle Location { get; set; }
         public byte[] Image { get; set; }
-        public int Frame { get; set; }
 
-        public NewImageEventArgs(int frame, byte[] image)
+        public NewImageEventArgs(Rectangle location, byte[] image)
         {
-            Frame = frame;
+            Location = location;
             Image = image;
-        }
-    }
-
-    public class NewImageFragmentEventArgs : EventArgs
-    {
-        public byte[] Image { get; set; }
-        public int Frame { get; set; }
-        public Rectangle ImagePosition { get; set; }
-
-        public NewImageFragmentEventArgs(int frame, byte[] image, Rectangle imagePosition)
-        {
-            Frame = frame;
-            Image = image;
-            ImagePosition = imagePosition;
         }
     }
 
     public class MouseMoveEventArgs : EventArgs
     {
-        public double X { get; set; }
-        public double Y { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int ScreenWidth { get; set; }
+        public int ScreenHeight { get; set; }
 
-        public MouseMoveEventArgs(double x, double y)
+        public MouseMoveEventArgs(int x, int y, int screenWidth, int screenHeight)
         {
             X = x;
             Y = y;
+            ScreenWidth = screenWidth;
+            ScreenHeight = screenHeight;
         }
     }
 

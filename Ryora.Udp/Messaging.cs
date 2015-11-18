@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using Ryora.Udp.Messages;
+using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Ryora.Udp
 {
@@ -12,63 +9,62 @@ namespace Ryora.Udp
         Connect = 0,
         Disconnect = 1,
         Acknowledge = 2,
-        Data = 3,
-        DataFragment = 4,
-        LastDataFragment = 5
+        MouseMessage = 3,
+        Image = 4,
+
+        //Data = 3,
+        //DataFragment = 4,
+        //LastDataFragment = 5
     }
 
     public static class Messaging
     {
-        public static byte[] CreateMessage(MessageType messageType, short clientId, short channel, short messageId, short sequence, byte[] payload)
+        public static byte[] CreateMessage(IMessage messageInformation, short clientId, short channel, short messageId)
         {
-            var header = GenerateHeader(messageType, clientId, channel, messageId, sequence);
-            var data = new byte[header.Length + payload.Length];
-            Buffer.BlockCopy(header, 0, data, 0, header.Length);
-            Buffer.BlockCopy(payload, 0, data, header.Length, payload.Length);
-            return data;
+            return MessageConverter.Payloader(
+                GenerateHeader(messageInformation.MessageType, clientId, channel, messageId),
+                messageInformation.ToPayload());
         }
 
-        public static byte[] CreateMessage(MessageType messageType, short clientId, short channel, short messageId, short sequence, string message)
+        public static byte[] CreateMessage(MessageType messageType, short clientId, short channel, short messageId, byte[] payload)
+        {
+            return MessageConverter.Payloader(
+                GenerateHeader(messageType, clientId, channel, messageId),
+                payload);
+        }
+
+        public static byte[] CreateMessage(MessageType messageType, short clientId, short channel, short messageId, string message = "")
         {
             var payload = Encoding.Default.GetBytes(message);
-            return CreateMessage(messageType, clientId, channel, messageId, sequence, payload);
+            return CreateMessage(messageType, clientId, channel, messageId, payload);
         }
 
         public static byte[] CreateMessage(UdpMessage message)
         {
-            return CreateMessage(message.Type, message.ConnectionId, message.Channel, message.MessageId, message.Sequence, message.Payload);
+            return CreateMessage(message.Type, message.ConnectionId, message.Channel, message.MessageId, message.Payload);
         }
 
-        private static int HeaderLength { get; set; } = 9;
-        private static byte[] GenerateHeader(MessageType messagetype, short connectionId, short channel, short messageId, short sequence)
+        private static byte[] GenerateHeader(MessageType messagetype, short connectionId, short channel, short messageId)
         {
-            var header = new byte[HeaderLength];
-            header[0] = (byte)((int)messagetype);
-            header[1] = (byte) (connectionId >> 8);
-            header[2] = (byte) (connectionId & 255);
-            header[3] = (byte) (channel >> 8);
-            header[4] = (byte) (channel & 255);
-            header[5] = (byte) (messageId >> 8);
-            header[6] = (byte) (messageId & 255);
-            header[7] = (byte) (sequence >> 8);
-            header[8] = (byte) (sequence & 255);
+            var header = MessageConverter.Payloader(messagetype, connectionId, channel, messageId);
             return header;
         }
 
         public static UdpMessage ReceiveMessage(byte[] message)
         {
-            UdpMessage msg = new UdpMessage();        
-            msg.Type = (MessageType) message[0];
-            msg.ConnectionId = (short)((message[1] << 8) + message[2]);
-            msg.Channel = (short) ((message[3] << 8) + message[4]);
-            msg.MessageId = (short) ((message[5] << 8) + message[6]);
-            msg.Sequence = (short) ((message[7] << 8) + message[8]);
+            UdpMessage msg = new UdpMessage();
 
-            msg.Payload = new byte[message.Length - HeaderLength];
-            Buffer.BlockCopy(message, HeaderLength, msg.Payload, 0, msg.Payload.Length);
-            
+            var offset = 1;
+            msg.Type = (MessageType)message[0];
+            msg.ConnectionId = MessageConverter.ReadShort(message, ref offset);
+            msg.Channel = MessageConverter.ReadShort(message, ref offset);
+            msg.MessageId = MessageConverter.ReadShort(message, ref offset);
+
+            msg.Payload = new byte[message.Length - offset];
+            Buffer.BlockCopy(message, offset, msg.Payload, 0, msg.Payload.Length);
+
             return msg;
-        }        
+        }
     }
 
     public class UdpMessage
@@ -77,7 +73,6 @@ namespace Ryora.Udp
         public short ConnectionId { get; set; }
         public short Channel { get; set; }
         public short MessageId { get; set; }
-        public short Sequence { get; set; }
         public byte[] Payload { get; set; }
 
         public string Message => Encoding.Default.GetString(Payload);
@@ -86,19 +81,18 @@ namespace Ryora.Udp
         {
         }
 
-        public UdpMessage(MessageType type, short connectionId, short channel, short messageId, short sequence, byte[] payload)
+        public UdpMessage(MessageType type, short connectionId, short channel, short messageId, byte[] payload)
         {
             Type = type;
             ConnectionId = connectionId;
             Channel = channel;
             MessageId = messageId;
-            Sequence = sequence;
             Payload = payload;
 
         }
 
-        public UdpMessage(MessageType type, short connectionId, short channel, short messageId, short sequence, string message)
-            : this(type, connectionId, channel, messageId, sequence, Encoding.Default.GetBytes(message))
+        public UdpMessage(MessageType type, short connectionId, short channel, short messageId, string message)
+            : this(type, connectionId, channel, messageId, Encoding.Default.GetBytes(message))
         {
 
         }

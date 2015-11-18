@@ -1,4 +1,5 @@
-﻿using Ryora.Client.Services;
+﻿using Gma.System.MouseKeyHook;
+using Ryora.Client.Services;
 using Ryora.Client.Services.Implementation;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,14 +19,19 @@ namespace Ryora.Client
     {
         public IRealtimeService RealtimeService;
         public IScreenshotService ScreenshotService;
-        internal readonly long MouseMoveThrottle = 100;
+        internal readonly long MouseMoveThrottle = 50;
         internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
         internal short Channel = 1;
         private bool DebugText { get; set; } = true;
 
+        private IKeyboardMouseEvents GlobalKeyboardMouseHook;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            GlobalKeyboardMouseHook = Hook.GlobalEvents();
+
             MouseMoveThrottleTimer.Start();
             RealtimeService = new UdpRealtimeService();
             //RealtimeService = new SignalRRealtimeService(Channel);
@@ -55,7 +61,7 @@ namespace Ryora.Client
                         update.Bitmap.Save(ms, GetEncoder(ImageFormat.Jpeg), JpgEncoderParameters);
                         var bytes = ms.GetBuffer();
                         await
-                            RealtimeService.SendImage(Channel, Frame++, update.Location.X, update.Location.Y,
+                            RealtimeService.SendImage(Channel, update.Location.X, update.Location.Y,
                                 update.Location.Width, update.Location.Height, bytes);
                     }
                 }
@@ -68,12 +74,11 @@ namespace Ryora.Client
                 }
             });
 
-            MouseMove += async (s, e) =>
+            GlobalKeyboardMouseHook.MouseMove += async (s, e) =>
             {
                 if (!IsStreaming || MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
                 MouseMoveThrottleTimer.Restart();
-                var pos = e.GetPosition(this);
-                await RealtimeService.SendMouseCoords(Channel, pos.X, pos.Y);
+                await RealtimeService.SendMouseCoords(Channel, e.X, e.Y);
             };
         }
 

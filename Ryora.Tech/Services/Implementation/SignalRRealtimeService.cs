@@ -1,14 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNet.SignalR.Client;
+using Ryora.Tech.Models;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Controls;
-using Microsoft.AspNet.SignalR.Client;
-using Ryora.Tech.Models;
-using Ryora.Tech.Services;
 
 namespace Ryora.Tech.Services.Implementation
 {
@@ -26,26 +21,21 @@ namespace Ryora.Tech.Services.Implementation
         public event EventHandler NewImageFragment;
         public event EventHandler MouseMove;
         public event EventHandler Sharing;
-        
+
         public SignalRRealtimeService(short channel)
         {
-            var queryString = new Dictionary<string, string> {{"Channel", channel.ToString()}};
+            var queryString = new Dictionary<string, string> { { "Channel", channel.ToString() } };
             HubConnection = new HubConnection(HostUrl, queryString);
             HubProxy = HubConnection.CreateHubProxy("RemoteAssistHub");
-            HubProxy.On<int, byte[]>("NewImage", (frame, image) =>
+            HubProxy.On<Rectangle, byte[]>("NewImage", (location, image) =>
             {
                 if (NewImage == null) return;
-                NewImage(this, new NewImageEventArgs(frame, image));
+                NewImage(this, new NewImageEventArgs(location, image));
             });
-            HubProxy.On<int, int, int, int, int, byte[]>("NewImageFragment", (frame, x, y, width, height, image) =>
-            {
-                if (NewImageFragment == null) return;
-                NewImageFragment(this, new NewImageFragmentEventArgs(frame, image, new Rectangle(x, y, width, height)));
-            });
-            HubProxy.On<int, int>("MouseMove", (x, y) =>
+            HubProxy.On<int, int, int, int>("MouseMessage", (x, y, sw, sh) =>
             {
                 if (MouseMove == null) return;
-                MouseMove(this, new MouseMoveEventArgs(x, y));
+                MouseMove(this, new MouseMoveEventArgs(x, y, sw, sh));
             });
             HubProxy.On("Share", (isSharing) =>
             {
@@ -60,7 +50,14 @@ namespace Ryora.Tech.Services.Implementation
             await HubConnection.Start();
         }
 
-        public string Transport {
+        public async Task EndConnection(short channel)
+        {
+            await Task.Delay(0);
+            HubConnection.Stop();
+        }
+
+        public string Transport
+        {
             get
             {
                 if (HubConnection == null || HubConnection.State == ConnectionState.Disconnected) return "Disconnected";

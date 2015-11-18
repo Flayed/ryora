@@ -31,24 +31,24 @@ namespace Ryora.Client.Services.Implementation
             IsStarted = true;
         }
 
-        public async Task SendImage(short channel, int frame, byte[] image)
+        public async Task EndConnection(short channel)
+        {
+            await Task.Delay(0);
+            HubConnection.Stop();
+        }
+
+        public async Task SendImage(short channel, int x, int y, int width, int height, byte[] image)
         {
             if (!GoodConnection) return;
-            await HubProxy.Invoke("SendImage", channel, frame, image);
+            await HubProxy.Invoke("SendImageFragment", channel, x, y, width, height, image);
         }
 
-        public async Task SendImage(short channel, int frame, int x, int y, int width, int height, byte[] image)
+        public Task SendImage(short channel, Rectangle location, byte[] image)
         {
-            if (!GoodConnection) return;
-            await HubProxy.Invoke("SendImageFragment", channel, frame, x, y, width, height, image);
+            return SendImage(channel, location.X, location.Y, location.Width, location.Height, image);
         }
 
-        public Task SendImage(short channel, int frame, Rectangle location, byte[] image)
-        {
-            return SendImage(channel, frame, location.X, location.Y, location.Width, location.Height, image);
-        }
-
-        public async Task SendMouseCoords(short channel, double x, double y)
+        public async Task SendMouseCoords(short channel, int x, int y)
         {
             if (!GoodConnection) return;
             await HubProxy.Invoke("SendMouseCoords", channel, x, y);

@@ -1,5 +1,6 @@
 ﻿using Ryora.Tech.Models;
 using Ryora.Udp;
+using Ryora.Udp.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,7 +21,7 @@ namespace Ryora.Tech.Services.Implementation
         private short ConnectionId { get; set; }
         private UdpClient Client { get; } = new UdpClient();
         private bool IsConnected { get; set; } = false;
-        private List<ImageFragment> MessageFragments { get; set; } = new List<ImageFragment>();
+        private List<ImageFragment> ImageFragments { get; set; } = new List<ImageFragment>();
         private int CurrentFrame { get; set; }
 
         private short _messageId = short.MinValue;
@@ -36,7 +37,6 @@ namespace Ryora.Tech.Services.Implementation
         }
 
         public event EventHandler NewImage;
-        public event EventHandler NewImageFragment;
         public event EventHandler MouseMove;
         public event EventHandler Sharing;
 
@@ -44,22 +44,22 @@ namespace Ryora.Tech.Services.Implementation
         {
             ConnectionId = 2; // (short)(new Random().Next(short.MinValue, short.MaxValue));
             var missedFragmentTimer = new System.Timers.Timer(1000);
-            missedFragmentTimer.Elapsed += async (s, e) =>
+            missedFragmentTimer.Elapsed += (s, e) =>
             {
                 var missedFragments =
-                    MessageFragments.Where(f => f.Duration.ElapsedMilliseconds > MissedFragmentThreshold);
+                    ImageFragments.Where(f => f.Duration.ElapsedMilliseconds > MissedFragmentThreshold);
                 foreach (var missedFragment in missedFragments)
                 {
-                    var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"MissedFragment^{missedFragment}");
-                    await Client.SendAsync(message, message.Length, ServerEndPoint);
-                    MessageFragments.Remove(missedFragment);
+                    //var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"MissedFragment^{missedFragment}");
+                    //await Client.SendAsync(message, message.Length, ServerEndPoint);
+                    ImageFragments.Remove(missedFragment);
                 }
             };
         }
 
         public async Task StartConnection(short channel)
         {
-            var connectMessage = Messaging.CreateMessage(MessageType.Connect, ConnectionId, channel, MessageId, 0, "Initiating Connection");
+            var connectMessage = Messaging.CreateMessage(MessageType.Connect, ConnectionId, channel, MessageId, "Initiating Connection");
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
@@ -73,60 +73,23 @@ namespace Ryora.Tech.Services.Implementation
                             Console.WriteLine("Connected and good to go!");
                             IsConnected = true;
                             break;
-                        case MessageType.Data:
-                            var parts = message.Message.Split('^');
-                            switch (parts[0])
-                            {
-                                case "NewImage":
-                                    if (NewImage == null || parts.Length != 3) continue;
-                                    CurrentFrame = int.Parse(parts[1]);
-                                    MessageFragments.Add(new ImageFragment(CurrentFrame, message.MessageId, int.Parse(parts[2])));
-                                    break;
-                                case "NewPartialImage":
-                                    if (NewImageFragment == null || parts.Length != 7) continue;
-                                    CurrentFrame = int.Parse(parts[1]);
-                                    MessageFragments.Add(new ImageFragment(CurrentFrame, message.MessageId, int.Parse(parts[2]),
-                                        new Rectangle(
-                                            int.Parse(parts[3]),
-                                            int.Parse(parts[4]),
-                                            int.Parse(parts[5]),
-                                            int.Parse(parts[6]))));
-                                    break;
-                                case "MouseMove":
-                                    if (MouseMove == null || parts.Length != 3) continue;
-                                    MouseMove(this, new MouseMoveEventArgs(double.Parse(parts[1]), double.Parse(parts[2])));
-                                    break;
-                                case "Share":
-                                    if (Sharing == null || parts.Length != 2) continue;
-                                    Sharing(this, new SharingEventArgs(bool.Parse(parts[1])));
-                                    break;
-                            }
-                            break;
-                        case MessageType.DataFragment:
-                        case MessageType.LastDataFragment:
+                        case MessageType.Image:
+                            var imageMessage = new ImageMessage(message.Payload);
                             try
                             {
-                                var imageFragment = MessageFragments.FirstOrDefault(mf => mf.MessageId.Equals(message.MessageId));
-                                if (imageFragment == null) continue;
-                                imageFragment.Fragments.Add(message);
-
-                                if (imageFragment.Length == imageFragment.Fragments.Sum(f => f.Payload.Length))
+                                var imageFragment = ImageFragments.FirstOrDefault(mf => mf.MessageId.Equals(message.MessageId));
+                                if (imageFragment == null)
                                 {
-                                    var fragments = imageFragment.Fragments.OrderBy(f => f.Sequence);
-                                    var buffer = new byte[imageFragment.Length];
-                                    var offset = 0;
-                                    foreach (var fragment in fragments)
-                                    {
-                                        Buffer.BlockCopy(fragment.Payload, 0, buffer, offset, fragment.Payload.Length);
-                                        offset += fragment.Payload.Length;
-                                    }
+                                    imageFragment = new ImageFragment(message.MessageId, imageMessage);
+                                    ImageFragments.Add(imageFragment);
+                                }
+                                else
+                                    imageFragment.AddFragment(imageMessage);
 
-                                    if (imageFragment.ImagePosition.HasValue)
-                                        NewImageFragment?.Invoke(this, new NewImageFragmentEventArgs(imageFragment.Frame, buffer, imageFragment.ImagePosition.Value));
-                                    else
-                                        NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.Frame, buffer));
-
-                                    MessageFragments.Remove(imageFragment);
+                                if (imageFragment.IsComplete)
+                                {
+                                    NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.ImageLocation, imageFragment.Image));
+                                    ImageFragments.Remove(imageFragment);
                                 }
                             }
                             catch (Exception ex)
@@ -134,9 +97,19 @@ namespace Ryora.Tech.Services.Implementation
                                 Console.WriteLine($"Something bad happened: {ex.Message}");
                             }
                             break;
+                        case MessageType.MouseMessage:
+                            var mouseMessage = new MouseMessage(message.Payload);
+                            MouseMove?.Invoke(this, new MouseMoveEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight));
+                            break;
                     }
                 }
             });
+        }
+
+        public async Task EndConnection(short channel)
+        {
+            var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
+            await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
         }
 
         public string Transport => "UDP Datagrams!";
@@ -144,25 +117,28 @@ namespace Ryora.Tech.Services.Implementation
 
     public class ImageFragment
     {
-        public Rectangle? ImagePosition { get; set; }
         public short MessageId { get; set; }
-        public int Frame { get; set; }
         public int Length { get; set; }
+        public Rectangle ImageLocation { get; set; }
         public Stopwatch Duration { get; } = new Stopwatch();
-        public List<UdpMessage> Fragments { get; set; } = new List<UdpMessage>();
+        private List<ImageMessage> Fragments { get; set; } = new List<ImageMessage>();
 
-        public ImageFragment(int frame, short messageId, int length, Rectangle? imagePosition = null)
+        public ImageFragment(short messageId, ImageMessage imageMessage)
         {
-            Frame = frame;
             MessageId = messageId;
-            Length = length;
-            ImagePosition = imagePosition;
+            Length = imageMessage.ImageLength;
+            Fragments.Add(imageMessage);
+            ImageLocation = imageMessage.Location;
             Duration.Start();
         }
 
-        public override string ToString()
+        public void AddFragment(ImageMessage imageMessage)
         {
-            return ImagePosition.HasValue ? $"{ImagePosition.Value.X}^{ImagePosition.Value.Y}^{ImagePosition.Value.Width}^{ImagePosition.Value.Height}" : $"";
+            Fragments.Add(imageMessage);
         }
+
+        public bool IsComplete => Fragments.Sum(f => f.ImageData.Length) == Length;
+
+        public byte[] Image => Fragments.OrderBy(f => f.Sequence).SelectMany(f => f.ImageData).ToArray();
     }
 }

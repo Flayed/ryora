@@ -37,41 +37,12 @@ namespace Ryora.Tech
             RealtimeService.NewImage += (o, e) =>
             {
                 var ea = e as NewImageEventArgs;
-                if (ea?.Image == null || ea?.Frame < LastFrame)
-                    return;
-                LastFrame = ea.Frame;
+                if (ea?.Image == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     try
                     {
-                        using (var ms = new MemoryStream(ea.Image))
-                        {
-                            using (var bmp = new Bitmap(ms, true))
-                            {
-                                this.Screenshot.Source = Imaging.CreateBitmapSourceFromHBitmap(bmp.GetHbitmap(),
-                                    IntPtr.Zero,
-                                    Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                });
-            };
-
-            RealtimeService.NewImageFragment += (o, e) =>
-            {
-                var ea = e as NewImageFragmentEventArgs;
-                if (ea?.Image == null || ea?.Frame < LastFrame) return;
-                LastFrame = ea.Frame;
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        Screenshot.Source = ScreenshotService.ProcessBitmap(ea.ImagePosition, ea.Image);
+                        Screenshot.Source = ScreenshotService.ProcessBitmap(ea.Location, ea.Image);
                     }
                     catch (Exception ex)
                     {
@@ -86,17 +57,19 @@ namespace Ryora.Tech
                 if (ea == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    var x = ea.X - this.window.ActualWidth / 2;
+                    var y = ea.Y - this.window.ActualHeight / 2;
+
                     if (!MousePointer.IsVisible) MousePointer.Visibility = Visibility.Visible;
 
-                    var offset = VisualTreeHelper.GetOffset(MousePointer);
                     TranslateTransform trans = new TranslateTransform();
                     MousePointer.RenderTransform = trans;
-                    DoubleAnimation anim1 = new DoubleAnimation(LastPoint.Y, ea.Y, TimeSpan.FromMilliseconds(100));
-                    DoubleAnimation anim2 = new DoubleAnimation(LastPoint.X, ea.X, TimeSpan.FromMilliseconds(100));
-                    Console.WriteLine($"({LastPoint.X},{LastPoint.Y}) => ({ea.X}, {ea.Y})");
+                    DoubleAnimation anim1 = new DoubleAnimation(LastPoint.Y, y, TimeSpan.FromMilliseconds(100));
+                    DoubleAnimation anim2 = new DoubleAnimation(LastPoint.X, x, TimeSpan.FromMilliseconds(100));
+                    Console.WriteLine($"({LastPoint.X},{LastPoint.Y}) => ({x}, {y})");
                     trans.BeginAnimation(TranslateTransform.YProperty, anim1);
                     trans.BeginAnimation(TranslateTransform.XProperty, anim2);
-                    LastPoint = new System.Windows.Point(ea.X, ea.Y);
+                    LastPoint = new System.Windows.Point(x, y);
                 });
             };
 

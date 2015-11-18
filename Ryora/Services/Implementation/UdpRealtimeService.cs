@@ -1,4 +1,5 @@
 ﻿using Ryora.Udp;
+using Ryora.Udp.Messages;
 using System;
 using System.Drawing;
 using System.Net;
@@ -33,7 +34,7 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task StartConnection(short channel)
         {
-            var connectMessage = Messaging.CreateMessage(MessageType.Connect, ConnectionId, channel, MessageId, 0, "Initiating Connection");
+            var connectMessage = Messaging.CreateMessage(MessageType.Connect, ConnectionId, channel, MessageId);
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
@@ -47,50 +48,28 @@ namespace Ryora.Client.Services.Implementation
                             Console.WriteLine("Connected and good to go!");
                             IsConnected = true;
                             break;
-                        case MessageType.Data:
-                            var parts = message.Message.Split('^');
-                            switch (parts[0])
-                            {
-                                case "MissedFragment":
-                                    var missedRect = new Rectangle(
-                                        int.Parse(parts[1]),
-                                        int.Parse(parts[2]),
-                                        int.Parse(parts[3]),
-                                        int.Parse(parts[4]));
-                                    MissedFragmentEvent?.Invoke(this, missedRect);
-                                    break;
-                            }
-                            break;
                     }
                 }
             });
         }
 
-        public async Task SendImage(short channel, int frame, byte[] image)
+        public async Task EndConnection(short channel)
         {
-            var mId = MessageId;
-            var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, mId, 0, $"NewImage^{frame}^{image.Length}");
-            await Client.SendAsync(message, message.Length, ServerEndPoint);
-            await SendImageFragments(channel, mId, image);
+            var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
+            await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
         }
 
-        public Task SendImage(short channel, int frame, Rectangle location, byte[] image)
+        public Task SendImage(short channel, Rectangle rect, byte[] image)
         {
-            return SendImage(channel, frame, location.X, location.Y, location.Width, location.Height, image);
+            return SendImage(channel, rect.X, rect.Y, rect.Width, rect.Height, image);
         }
 
-        public async Task SendImage(short channel, int frame, int x, int y, int width, int height, byte[] image)
+        public async Task SendImage(short channel, int x, int y, int width, int height, byte[] image)
         {
-            var mId = MessageId;
-            var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, mId, 0, $"NewPartialImage^{frame}^{image.Length}^{x}^{y}^{width}^{height}");
-            await Client.SendAsync(message, message.Length, ServerEndPoint);
-            await SendImageFragments(channel, mId, image);
-        }
-
-        private async Task SendImageFragments(short channel, short messageId, byte[] image)
-        {
+            var messageId = MessageId;
             short sequence = 0;
             var offset = 0;
+            int imageLength = image.Length;
             while (offset < image.Length)
             {
                 var length = (offset + 1000 < image.Length ? 1000 : image.Length - offset);
@@ -98,25 +77,24 @@ namespace Ryora.Client.Services.Implementation
                 Array.Copy(image, offset, buf, 0, length);
                 offset += length;
 
-                var frag = Messaging.CreateMessage(
-                    (offset >= image.Length ? MessageType.LastDataFragment : MessageType.DataFragment), ConnectionId,
-                    channel, messageId, sequence++, buf);
+                var message = Messaging.CreateMessage(new ImageMessage(x, y, width, height, imageLength, sequence++, buf),
+                    ConnectionId, channel, messageId);
 
-                await Client.SendAsync(frag, frag.Length, ServerEndPoint);
+                await Client.SendAsync(message, message.Length, ServerEndPoint);
             }
         }
 
-        public async Task SendMouseCoords(short channel, double x, double y)
+        public async Task SendMouseCoords(short channel, int x, int y)
         {
-            await Task.Delay(1);
-            var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"MouseMove^{x}^{y}");
+            var message = Messaging.CreateMessage(new MouseMessage(x, y, 1920, 1080), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 
         public async Task Sharing(short channel, bool isSharing)
         {
-            var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"Sharing^{isSharing}");
-            await Client.SendAsync(message, message.Length, ServerEndPoint);
+            //var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"Sharing^{isSharing}");
+            //await Client.SendAsync(message, message.Length, ServerEndPoint);
+            await Task.Delay(1);
         }
 
         public event EventHandler<Rectangle> MissedFragmentEvent;
