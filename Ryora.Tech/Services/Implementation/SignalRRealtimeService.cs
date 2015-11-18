@@ -56,6 +56,11 @@ namespace Ryora.Tech.Services.Implementation
             HubConnection.Stop();
         }
 
+        public Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight)
+        {
+            throw new NotImplementedException();
+        }
+
         public string Transport
         {
             get

@@ -2,6 +2,7 @@
 using Ryora.Tech.Services;
 using Ryora.Tech.Services.Implementation;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -22,6 +23,8 @@ namespace Ryora.Tech
         private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
 
         private static short Channel { get; } = 1;
+        internal readonly long MouseMoveThrottle = 50;
+        internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
 
         private readonly IRealtimeService RealtimeService;
         private readonly IScreenshotService ScreenshotService;
@@ -30,7 +33,7 @@ namespace Ryora.Tech
         public MainWindow()
         {
             InitializeComponent();
-
+            MouseMoveThrottleTimer.Start();
             MousePointer.Source = GetMousePointerImage();
             //RealtimeService = new SignalRRealtimeService(Channel);
             RealtimeService = new UdpRealtimeService(Channel);
@@ -64,6 +67,8 @@ namespace Ryora.Tech
 
             RealtimeService.MouseMove += (o, e) =>
             {
+                if (MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
+                MouseMoveThrottleTimer.Restart();
                 var ea = e as MouseMoveEventArgs;
                 if (ea == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
@@ -106,6 +111,12 @@ namespace Ryora.Tech
                     }
 
                 });
+            };
+
+            MouseMove += async (s, e) =>
+            {
+                var position = e.GetPosition(Screenshot);
+                await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight);
             };
 
             Task.Run(async () =>

@@ -12,6 +12,8 @@ namespace Ryora.Tech.Services
 
         Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel);
+
+        Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight);
         string Transport { get; }
     }
 }

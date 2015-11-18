@@ -6,6 +6,8 @@ namespace Ryora.Client.Services
 {
     public interface IRealtimeService
     {
+        event EventHandler MouseMove;
+
         Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel);
         Task SendImage(short channel, int x, int y, int width, int height, byte[] image);

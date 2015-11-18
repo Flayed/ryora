@@ -64,48 +64,62 @@ namespace Ryora.Tech.Services.Implementation
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
-                while (true)
-                {
-                    var result = await Client.ReceiveAsync();
-                    var message = Messaging.ReceiveMessage(result.Buffer);
-                    switch (message.Type)
-                    {
-                        case MessageType.Acknowledge:
-                            var acknowledgeMessage = new AcknowledgeMessage(message.Payload);
-                            ClientResolutionChanged?.Invoke(this, new ClientResolutionChangedEventArgs(acknowledgeMessage.ScreenWidth, acknowledgeMessage.ScreenHeight));
-                            IsConnected = true;
-                            break;
-                        case MessageType.Image:
-                            var imageMessage = new ImageMessage(message.Payload);
-                            try
-                            {
-                                var imageFragment = ImageFragments.FirstOrDefault(mf => mf.MessageId.Equals(message.MessageId));
-                                if (imageFragment == null)
-                                {
-                                    imageFragment = new ImageFragment(message.MessageId, imageMessage);
-                                    ImageFragments.Add(imageFragment);
-                                }
-                                else
-                                    imageFragment.AddFragment(imageMessage);
-
-                                if (imageFragment.IsComplete)
-                                {
-                                    NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.ImageLocation, imageFragment.Image));
-                                    ImageFragments.Remove(imageFragment);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Something bad happened: {ex.Message}");
-                            }
-                            break;
-                        case MessageType.MouseMessage:
-                            var mouseMessage = new MouseMessage(message.Payload);
-                            MouseMove?.Invoke(this, new MouseMoveEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight));
-                            break;
-                    }
-                }
+                await ListenAsync();
             });
+        }
+
+        public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight)
+        {
+            var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight), ConnectionId, channel, MessageId);
+            await Client.SendAsync(message, message.Length, ServerEndPoint);
+        }
+
+        private async Task ListenAsync()
+        {
+            while (true)
+            {
+                var result = await Client.ReceiveAsync();
+                var message = Messaging.ReceiveMessage(result.Buffer);
+                switch (message.Type)
+                {
+                    case MessageType.Acknowledge:
+                        var acknowledgeMessage = new AcknowledgeMessage(message.Payload);
+                        ClientResolutionChanged?.Invoke(this,
+                            new ClientResolutionChangedEventArgs(acknowledgeMessage.ScreenWidth, acknowledgeMessage.ScreenHeight));
+                        IsConnected = true;
+                        break;
+                    case MessageType.Image:
+                        var imageMessage = new ImageMessage(message.Payload);
+                        try
+                        {
+                            var imageFragment = ImageFragments.FirstOrDefault(mf => mf.MessageId.Equals(message.MessageId));
+                            if (imageFragment == null)
+                            {
+                                imageFragment = new ImageFragment(message.MessageId, imageMessage);
+                                ImageFragments.Add(imageFragment);
+                            }
+                            else
+                                imageFragment.AddFragment(imageMessage);
+
+                            if (imageFragment.IsComplete)
+                            {
+                                NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.ImageLocation, imageFragment.Image));
+                                ImageFragments.Remove(imageFragment);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Something bad happened: {ex.Message}");
+                        }
+                        break;
+                    case MessageType.MouseMessage:
+                        var mouseMessage = new MouseMessage(message.Payload);
+                        MouseMove?.Invoke(this,
+                            new MouseMoveEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth,
+                                mouseMessage.ScreenHeight));
+                        break;
+                }
+            }
         }
 
         public async Task EndConnection(short channel)

@@ -1,4 +1,5 @@
 ﻿using Gma.System.MouseKeyHook;
+using Ryora.Client.Models;
 using Ryora.Client.Services;
 using Ryora.Client.Services.Implementation;
 using System.Collections.Generic;
@@ -8,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using Encoder = System.Drawing.Imaging.Encoder;
 
 namespace Ryora.Client
 {
@@ -19,6 +19,7 @@ namespace Ryora.Client
     {
         public IRealtimeService RealtimeService;
         public IScreenshotService ScreenshotService;
+        public IMouseService MouseService;
         internal readonly long MouseMoveThrottle = 50;
         internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
         internal short Channel = 1;
@@ -36,8 +37,9 @@ namespace Ryora.Client
             MouseMoveThrottleTimer.Start();
             RealtimeService = new UdpRealtimeService();
             //RealtimeService = new SignalRRealtimeService(Channel);
-
             ScreenshotService = new BitBlitScreenshotService();
+            MouseService = new PinvokeMouseService();
+
 
             RealtimeService.MissedFragmentEvent += (s, r) =>
             {
@@ -81,6 +83,21 @@ namespace Ryora.Client
                 MouseMoveThrottleTimer.Restart();
                 await RealtimeService.SendMouseCoords(Channel, e.X, e.Y, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
             };
+
+            RealtimeService.MouseMove += (s, e) =>
+            {
+                if (!IsStreaming) return;
+                var ea = e as MouseMessageEventArgs;
+                if (ea == null || ea.X == 0 || ea.Y == 0 || ea.ScreenWidth == 0 || ea.ScreenHeight == 0) return;
+
+                double tx = ScreenshotService.ScreenWidth / (double)ea.ScreenWidth;
+                double ty = ScreenshotService.ScreenHeight / (double)ea.ScreenHeight;
+
+                double x = (ea.X * tx);
+                double y = (ea.Y * ty);
+
+                MouseService.SetMousePosition(x, y);
+            };
         }
 
         public readonly EncoderParameters EncoderParameters = new EncoderParameters(1)
@@ -89,10 +106,10 @@ namespace Ryora.Client
         };
 
         private static int Frame { get; set; } = 0;
-        private static bool IsStreaming { get; set; } = false;
+        private static bool IsStreaming { get; set; }
 
 
-        private EncoderParameters _jpgEncoderParameters = null;
+        private EncoderParameters _jpgEncoderParameters;
 
         public EncoderParameters JpgEncoderParameters
         {

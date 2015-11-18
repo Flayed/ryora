@@ -1,4 +1,5 @@
-﻿using Ryora.Udp;
+﻿using Ryora.Client.Models;
+using Ryora.Udp;
 using Ryora.Udp.Messages;
 using System;
 using System.Drawing;
@@ -10,6 +11,8 @@ namespace Ryora.Client.Services.Implementation
 {
     public class UdpRealtimeService : IRealtimeService
     {
+        public event EventHandler MouseMove;
+
         private IPEndPoint ServerEndPoint = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
         private short ConnectionId { get; set; }
         private UdpClient Client = new UdpClient();
@@ -38,19 +41,28 @@ namespace Ryora.Client.Services.Implementation
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
-                while (!IsConnected)
-                {
-                    var result = await Client.ReceiveAsync();
-                    var message = Messaging.ReceiveMessage(result.Buffer);
-                    switch (message.Type)
-                    {
-                        case MessageType.Acknowledge:
-                            Console.WriteLine("Connected and good to go!");
-                            IsConnected = true;
-                            break;
-                    }
-                }
+                await ListenAsync();
             });
+        }
+
+        private async Task ListenAsync()
+        {
+            while (true)
+            {
+                var result = await Client.ReceiveAsync();
+                var message = Messaging.ReceiveMessage(result.Buffer);
+                switch (message.Type)
+                {
+                    case MessageType.Acknowledge:
+                        Console.WriteLine("Connected and good to go!");
+                        IsConnected = true;
+                        break;
+                    case MessageType.MouseMessage:
+                        var mouseMessage = new MouseMessage(message.Payload);
+                        MouseMove?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight));
+                        break;
+                }
+            }
         }
 
         public async Task EndConnection(short channel)

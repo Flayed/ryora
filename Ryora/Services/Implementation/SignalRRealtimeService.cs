@@ -8,6 +8,8 @@ namespace Ryora.Client.Services.Implementation
 {
     public class SignalRRealtimeService : IRealtimeService
     {
+        public event EventHandler MouseMove;
+
         private readonly HubConnection HubConnection;
         private IHubProxy HubProxy;
 #if DEBUG
