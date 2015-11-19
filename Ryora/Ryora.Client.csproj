@@ -78,9 +78,9 @@
     </ApplicationDefinition>
     <Compile Include="Models\EventArgs.cs" />
     <Compile Include="Models\ScreenUpdate.cs" />
-    <Compile Include="Services\IMouseService.cs" />
+    <Compile Include="Services\IInputService.cs" />
     <Compile Include="Services\Implementation\BitBlitScreenshotService.cs" />
-    <Compile Include="Services\Implementation\PinvokeMouseService.cs" />
+    <Compile Include="Services\Implementation\PInvokeInputService.cs" />
     <Compile Include="Services\Implementation\UdpRealtimeService.cs" />
     <Compile Include="Services\IRealtimeService.cs" />
     <Compile Include="Services\Implementation\SignalRRealtimeService.cs" />

@@ -19,12 +19,12 @@ namespace Ryora.Client
     {
         public IRealtimeService RealtimeService;
         public IScreenshotService ScreenshotService;
-        public IMouseService MouseService;
+        public IInputService MouseService;
         internal readonly long MouseMoveThrottle = 50;
         internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
         internal short Channel = 1;
 
-        private bool DebugText { get; set; } = true;
+        private bool DebugText { get; set; } = false;
 
         private IKeyboardMouseEvents GlobalKeyboardMouseHook;
 
@@ -38,7 +38,7 @@ namespace Ryora.Client
             RealtimeService = new UdpRealtimeService();
             //RealtimeService = new SignalRRealtimeService(Channel);
             ScreenshotService = new BitBlitScreenshotService();
-            MouseService = new PinvokeMouseService();
+            MouseService = new PInvokeInputService();
 
 
             RealtimeService.MissedFragmentEvent += (s, r) =>
@@ -89,22 +89,7 @@ namespace Ryora.Client
                 if (!IsStreaming) return;
                 var ea = e as MouseMessageEventArgs;
                 if (ea == null || ea.X == 0 || ea.Y == 0 || ea.ScreenWidth == 0 || ea.ScreenHeight == 0) return;
-
-                double tx = ScreenshotService.ScreenWidth / (double)ea.ScreenWidth;
-                double ty = ScreenshotService.ScreenHeight / (double)ea.ScreenHeight;
-
-                double x = (ea.X * tx);
-                double y = (ea.Y * ty);
-
-                MouseService.SetMousePosition((int)x, (int)y, ea.LeftButton, ea.MiddleButton, ea.RightButton);
-
-                if (DebugText)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ErrorMessage.Text += $"\nL: {ea.LeftButton} M: {ea.MiddleButton} R: {ea.RightButton} 1: {ea.FirstExtendedButton} 2: {ea.SecondExtendedButton}";
-                    });
-                }
+                MouseService.SetMousePosition(ea.X, ea.Y, ea.ScreenWidth, ea.ScreenHeight, ea.LeftButton, ea.MiddleButton, ea.RightButton);
             };
         }
 

@@ -114,12 +114,9 @@ namespace Ryora.Tech
                 });
             };
 
-            MouseMove += async (s, e) =>
-            {
-                var position = e.GetPosition(Screenshot);
-
-                await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight, e.LeftButton == MouseButtonState.Pressed, e.MiddleButton == MouseButtonState.Pressed, e.RightButton == MouseButtonState.Pressed, e.XButton1 == MouseButtonState.Pressed, e.XButton2 == MouseButtonState.Pressed);
-            };
+            MouseMove += async (s, e) => { await MouseEvent(s, e); };
+            MouseDown += async (s, e) => { await MouseEvent(s, e); };
+            MouseUp += async (s, e) => { await MouseEvent(s, e); };
 
             Task.Run(async () =>
             {
@@ -129,6 +126,12 @@ namespace Ryora.Tech
                     Title = $"Technician View [Connection Type: {RealtimeService.Transport}]";
                 });
             });
+        }
+
+        private async Task MouseEvent(object sender, MouseEventArgs e)
+        {
+            var position = e.GetPosition(Screenshot);
+            await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight, e.LeftButton == MouseButtonState.Pressed, e.MiddleButton == MouseButtonState.Pressed, e.RightButton == MouseButtonState.Pressed, e.XButton1 == MouseButtonState.Pressed, e.XButton2 == MouseButtonState.Pressed);
         }
 
         public ImageSource GetMousePointerImage()
