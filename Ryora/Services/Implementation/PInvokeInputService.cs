@@ -70,6 +70,13 @@ namespace Ryora.Client.Services.Implementation
             Hardware = 2
         }
 
+        internal enum MouseButton : int
+        {
+            Left = 0,
+            Middle = 1,
+            Right = 2
+        }
+
         [Flags]
         internal enum MOUSEEVENTF : uint
         {
@@ -975,6 +982,7 @@ namespace Ryora.Client.Services.Implementation
         private const double Height = 65536;
 
         private bool IsLeftButtonDown { get; set; } = false;
+        private bool IsMiddleButtonDown { get; set; } = false;
         private bool IsRightButtonDown { get; set; } = false;
 
 
@@ -1002,90 +1010,72 @@ namespace Ryora.Client.Services.Implementation
                 }
             };
 
-            if (leftButton && !IsLeftButtonDown)
-            {
-                inputList.Add(new INPUT()
-                {
-                    type = (uint)InputType.Mouse,
-                    U = new InputUnion()
-                    {
-                        mi = new MOUSEINPUT()
-                        {
-                            dx = 0,
-                            dy = 0,
-                            mouseData = 0,
-                            dwFlags = MOUSEEVENTF.LEFTDOWN,
-                            time = 0,
-                            dwExtraInfo = UIntPtr.Zero
-                        }
-                    }
-                });
-                IsLeftButtonDown = true;
-            }
-            else if (!leftButton && IsLeftButtonDown)
-            {
-                inputList.Add(new INPUT()
-                {
-                    type = (uint)InputType.Mouse,
-                    U = new InputUnion()
-                    {
-                        mi = new MOUSEINPUT()
-                        {
-                            dx = 0,
-                            dy = 0,
-                            mouseData = 0,
-                            dwFlags = MOUSEEVENTF.LEFTUP,
-                            time = 0,
-                            dwExtraInfo = UIntPtr.Zero
-                        }
-                    }
-                });
-                IsLeftButtonDown = false;
-            }
-
-            if (rightButton && !IsRightButtonDown)
-            {
-                inputList.Add(new INPUT()
-                {
-                    type = (uint)InputType.Mouse,
-                    U = new InputUnion()
-                    {
-                        mi = new MOUSEINPUT()
-                        {
-                            dx = 0,
-                            dy = 0,
-                            mouseData = 0,
-                            dwFlags = MOUSEEVENTF.RIGHTDOWN,
-                            time = 0,
-                            dwExtraInfo = UIntPtr.Zero
-                        }
-                    }
-                });
-                IsRightButtonDown = true;
-            }
-            else if (!rightButton && IsRightButtonDown)
-            {
-                inputList.Add(new INPUT()
-                {
-                    type = (uint)InputType.Mouse,
-                    U = new InputUnion()
-                    {
-                        mi = new MOUSEINPUT()
-                        {
-                            dx = 0,
-                            dy = 0,
-                            mouseData = 0,
-                            dwFlags = MOUSEEVENTF.RIGHTUP,
-                            time = 0,
-                            dwExtraInfo = UIntPtr.Zero
-                        }
-                    }
-                });
-                IsRightButtonDown = false;
-            }
-
+            HandleLeftMouseButton(leftButton, inputList);
+            HandleMiddleMouseButton(middleButton, inputList);
+            HandleRightMouseButton(rightButton, inputList);
 
             SendInput((uint)inputList.Count, inputList.ToArray(), INPUT.Size);
+        }
+
+        private void HandleLeftMouseButton(bool leftButton, List<INPUT> inputList)
+        {
+            IsLeftButtonDown = HandleMouseButton(leftButton, IsLeftButtonDown, MouseButton.Left, inputList);
+        }
+
+        private void HandleMiddleMouseButton(bool middleButton, List<INPUT> inputList)
+        {
+            IsMiddleButtonDown = HandleMouseButton(middleButton, IsMiddleButtonDown, MouseButton.Middle, inputList);
+        }
+
+        private void HandleRightMouseButton(bool rightButton, List<INPUT> inputList)
+        {
+
+            IsRightButtonDown = HandleMouseButton(rightButton, IsRightButtonDown, MouseButton.Right, inputList);
+        }
+
+        private bool HandleMouseButton(bool buttonState, bool isDown, MouseButton button, List<INPUT> inputList)
+        {
+            if (buttonState && !isDown)
+            {
+                inputList.Add(new INPUT()
+                {
+                    type = (uint)InputType.Mouse,
+                    U = new InputUnion()
+                    {
+                        mi = new MOUSEINPUT()
+                        {
+                            dx = 0,
+                            dy = 0,
+                            mouseData = 0,
+                            dwFlags = (button == MouseButton.Right ? MOUSEEVENTF.RIGHTDOWN : button == MouseButton.Middle ? MOUSEEVENTF.MIDDLEDOWN : MOUSEEVENTF.LEFTDOWN),
+                            time = 0,
+                            dwExtraInfo = UIntPtr.Zero
+                        }
+                    }
+                });
+                isDown = true;
+            }
+            else if (!buttonState && isDown)
+            {
+                inputList.Add(new INPUT()
+                {
+                    type = (uint)InputType.Mouse,
+                    U = new InputUnion()
+                    {
+                        mi = new MOUSEINPUT()
+                        {
+                            dx = 0,
+                            dy = 0,
+                            mouseData = 0,
+                            dwFlags = (button == MouseButton.Right ? MOUSEEVENTF.RIGHTUP : button == MouseButton.Middle ? MOUSEEVENTF.MIDDLEUP : MOUSEEVENTF.LEFTUP),
+                            time = 0,
+                            dwExtraInfo = UIntPtr.Zero
+                        }
+                    }
+                });
+                isDown = false;
+            }
+            return isDown;
         }
     }
 }
