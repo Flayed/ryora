@@ -45,15 +45,10 @@ namespace Ryora.UdpServer
                 var requestMessage = Messaging.ReceiveMessage(request.Buffer);
                 MessagesReceived++;
                 BytesUsed += request.Buffer.Length;
-                Console.SetCursorPosition(0, 0);
-                Console.Write($"Bytes Used: {BytesUsed}B {KilobytesUsed}KB {MegabytesUsed}MB  ");
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write($"{KilobytesPerSecond} KB/s  ");
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.Write($"Recv: {MessagesReceived}  ");
-                Console.ForegroundColor = ConsoleColor.Magenta;
-                Console.WriteLine($"Avg: {AverageMessageSize}KB        ");
-                Console.ResetColor();
+                Terminal.Log($"Bytes Used: {BytesUsed}B {KilobytesUsed}KB {MegabytesUsed}MB  ", 0, true);
+                Terminal.Log($"{KilobytesPerSecond} KB/s  ", 0, ConsoleColor.Cyan);
+                Terminal.Log($"Recv: {MessagesReceived}  ", 0, ConsoleColor.Green);
+                Terminal.Log($"Avg: {AverageMessageSize}KB        ", 0, ConsoleColor.Magenta);
 
                 switch (requestMessage.Type)
                 {
@@ -68,10 +63,7 @@ namespace Ryora.UdpServer
                         ConnectionRequests.Add(connectionRequest);
                         var channelConnections =
                             ConnectionRequests.Where(cr => cr.Channel.Equals(connectionRequest.Channel)).ToArray();
-                        Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.SetCursorPosition(0, ++ConsoleLine);
-                        Console.WriteLine($"Channel {connectionRequest.Channel} has {channelConnections.Count()} connections.");
-                        Console.ResetColor();
+                        Terminal.LogLine($"Channel {connectionRequest.Channel} has {channelConnections.Count()} connections.", ConsoleColor.DarkGray);
                         if (channelConnections.Count() == 2)
                         {
                             await SendAcknowledgement(channelConnections.ElementAt(0), channelConnections.ElementAt(1));
@@ -79,10 +71,7 @@ namespace Ryora.UdpServer
                         break;
                     case MessageType.Disconnect:
                         ConnectionRequests.RemoveAll(cr => cr.Id.Equals(requestMessage.ConnectionId));
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.SetCursorPosition(0, ++ConsoleLine);
-                        Console.WriteLine($"Client {requestMessage.ConnectionId} disconnected from channel {requestMessage.Channel}");
-                        Console.ResetColor();
+                        Terminal.LogLine($"Client {requestMessage.ConnectionId} disconnected from channel {requestMessage.Channel}", ConsoleColor.Yellow);
                         await SendMessage(requestMessage);
                         break;
                     default:
@@ -93,10 +82,7 @@ namespace Ryora.UdpServer
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.SetCursorPosition(0, ++ConsoleLine);
-                Console.WriteLine($"Something bad happend: {ex.Message} {ex.InnerException?.Message}");
-                Console.ResetColor();
+                Terminal.LogLine($"Something bad happend: {ex.Message} {ex.InnerException?.Message}", ConsoleColor.Red);
             }
         }
 
@@ -115,10 +101,7 @@ namespace Ryora.UdpServer
             await Client.SendAsync(message, message.Length, firstRequest.IpEndPoint);
             message = Messaging.CreateMessage(new AcknowledgeMessage(firstRequest.ScreenWidth, firstRequest.ScreenHeight), ServerId, secondRequest.Channel, 0);
             await Client.SendAsync(message, message.Length, secondRequest.IpEndPoint);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.SetCursorPosition(0, ++ConsoleLine);
-            Console.WriteLine($"  Sent Connection Acknowledgement to channel {firstRequest.Channel} {firstRequest.Id}({firstRequest.IpEndPoint}) and {secondRequest.Id}({secondRequest.IpEndPoint})");
-            Console.ResetColor();
+            Terminal.LogLine($"  Sent Connection Acknowledgement to channel {firstRequest.Channel} {firstRequest.Id}({firstRequest.IpEndPoint}) and {secondRequest.Id}({secondRequest.IpEndPoint})", ConsoleColor.DarkGreen);
         }
     }
 }
