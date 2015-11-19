@@ -32,6 +32,20 @@ namespace Ryora.Udp
                     bytes.AddRange(BitConverter.GetBytes((ulong)arg));
                 else if (arg is ushort)
                     bytes.AddRange(BitConverter.GetBytes((ushort)arg));
+                else if (arg is IEnumerable<bool>)
+                {
+                    var offset = 1;
+                    byte b = 0;
+                    foreach (var boolean in (IEnumerable<bool>)arg)
+                    {
+                        if (boolean)
+                            b |= (byte)offset;
+                        offset = offset << 1;
+                    }
+                    Console.WriteLine($"Mouse Button Byte: {b}");
+
+                    bytes.Add(b);
+                }
                 else if (arg is MessageType)
                     bytes.Add((byte)((int)(MessageType)arg));
                 else if (arg is string)
@@ -111,6 +125,21 @@ namespace Ryora.Udp
         {
             var s = BitConverter.ToUInt32(data, offset);
             offset += sizeof(uint);
+            return s;
+        }
+
+        public static bool[] ReadBoolArray(byte[] data, ref int offset)
+        {
+            var s = new bool[8];
+            s[0] = (data[offset] & 1) == 1;
+            s[1] = (data[offset] & 2) == 2;
+            s[2] = (data[offset] & 4) == 4;
+            s[3] = (data[offset] & 8) == 8;
+            s[4] = (data[offset] & 16) == 16;
+            s[5] = (data[offset] & 32) == 32;
+            s[6] = (data[offset] & 64) == 64;
+            s[7] = (data[offset] & 128) == 128;
+            offset++;
             return s;
         }
     }

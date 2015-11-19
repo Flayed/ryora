@@ -2,6 +2,6 @@
 {
     public interface IMouseService
     {
-        void SetMousePosition(double x, double y);
+        void SetMousePosition(int x, int y, bool leftButton, bool middleButton, bool rightButton);
     }
 }

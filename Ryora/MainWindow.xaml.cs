@@ -96,7 +96,15 @@ namespace Ryora.Client
                 double x = (ea.X * tx);
                 double y = (ea.Y * ty);
 
-                MouseService.SetMousePosition(x, y);
+                MouseService.SetMousePosition((int)x, (int)y, ea.LeftButton, ea.MiddleButton, ea.RightButton);
+
+                if (DebugText)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ErrorMessage.Text += $"\nL: {ea.LeftButton} M: {ea.MiddleButton} R: {ea.RightButton} 1: {ea.FirstExtendedButton} 2: {ea.SecondExtendedButton}";
+                    });
+                }
             };
         }
 

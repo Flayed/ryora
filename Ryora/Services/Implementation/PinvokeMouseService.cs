@@ -1,15 +1,14 @@
-﻿using System.Runtime.InteropServices;
+﻿using NLog;
 
 namespace Ryora.Client.Services.Implementation
 {
     public class PinvokeMouseService : IMouseService
     {
-        [DllImport("User32.Dll")]
-        static extern long SetCursorPos(int x, int y);
+        private static Logger Log = LogManager.GetCurrentClassLogger();
 
-        public void SetMousePosition(double x, double y)
+        public void SetMousePosition(int x, int y, bool leftButton, bool middleButton, bool rightButton)
         {
-            SetCursorPos((int)x, (int)y);
+
         }
     }
 }

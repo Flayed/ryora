@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -116,7 +117,8 @@ namespace Ryora.Tech
             MouseMove += async (s, e) =>
             {
                 var position = e.GetPosition(Screenshot);
-                await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight);
+
+                await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight, e.LeftButton == MouseButtonState.Pressed, e.MiddleButton == MouseButtonState.Pressed, e.RightButton == MouseButtonState.Pressed, e.XButton1 == MouseButtonState.Pressed, e.XButton2 == MouseButtonState.Pressed);
             };
 
             Task.Run(async () =>

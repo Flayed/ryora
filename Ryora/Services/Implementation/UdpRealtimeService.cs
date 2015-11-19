@@ -59,7 +59,7 @@ namespace Ryora.Client.Services.Implementation
                         break;
                     case MessageType.MouseMessage:
                         var mouseMessage = new MouseMessage(message.Payload);
-                        MouseMove?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight));
+                        MouseMove?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight, mouseMessage.LeftButton, mouseMessage.MiddleButton, mouseMessage.RightButton, mouseMessage.FirstExtendedButton, mouseMessage.SecondExtendedButton));
                         break;
                 }
             }
