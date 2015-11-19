@@ -7,37 +7,43 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Ryora.UdpServer
 {
-    public static class UdpService
+    public class UdpService
     {
-        private static readonly int Port = 27816;
-        private static UdpClient _client = null;
-        public static UdpClient Client => _client ?? (_client = new UdpClient(Port));
-        public static short ServerId = 42;
-        private static readonly List<ConnectionRequest> ConnectionRequests = new List<ConnectionRequest>();
-        private static Stopwatch Sw = new Stopwatch();
+        private readonly int Port = 27816;
+        private readonly short ServerId = 42;
+        private readonly int KeepaliveTimeout = 10000;
 
-        private static int ConsoleLine { get; set; } = 1;
-        private static int MessagesReceived { get; set; } = 0;
-        private static double BytesUsed { get; set; } = 0;
-        private static double KilobytesUsed => Math.Round((double)BytesUsed / 1000, 2);
-        private static double MegabytesUsed => Math.Round((double)BytesUsed / 1000000, 2);
+        private UdpClient _client = null;
+        public UdpClient Client => _client ?? (_client = new UdpClient(Port));
 
-        private static double KilobytesPerSecond
+        private readonly List<Connection> Connections = new List<Connection>();
+        private Stopwatch Elapsed { get; set; } = new Stopwatch();
+
+        private int MessagesReceived { get; set; } = 0;
+        private double BytesUsed { get; set; } = 0;
+        private double KilobytesUsed => Math.Round((double)BytesUsed / 1000, 2);
+        private double MegabytesUsed => Math.Round((double)BytesUsed / 1000000, 2);
+        private double KilobytesPerSecond
         {
             get
             {
-                if (Sw.IsRunning)
-                    return Math.Round(KilobytesUsed / Sw.Elapsed.TotalSeconds, 2);
+                if (Elapsed.IsRunning)
+                    return Math.Round(KilobytesUsed / Elapsed.Elapsed.TotalSeconds, 2);
                 return 0;
             }
         }
+        private double AverageMessageSize => Math.Round((KilobytesUsed / MessagesReceived), 2);
 
-        private static double AverageMessageSize => Math.Round((KilobytesUsed / MessagesReceived), 2);
+        public UdpService()
+        {
+            SetUpKeepaliveTimer();
+        }
 
-        public static async Task Listen()
+        public async Task Listen()
         {
             try
             {
@@ -54,28 +60,28 @@ namespace Ryora.UdpServer
                 {
                     case MessageType.Connect:
                         var connectionMessage = new ConnectMessage(requestMessage.Payload);
-                        var connectionRequest = new ConnectionRequest(request.RemoteEndPoint, requestMessage.ConnectionId,
+                        var connection = new Connection(request.RemoteEndPoint, requestMessage.ConnectionId,
                             requestMessage.Channel, connectionMessage.ScreenWidth, connectionMessage.ScreenHeight);
-                        if (ConnectionRequests.Any(cr => cr.Id.Equals(connectionRequest.Id)))
+                        if (Connections.Any(cr => cr.Id.Equals(connection.Id)))
                         {
-                            ConnectionRequests.Remove(ConnectionRequests.First(cr => cr.Id.Equals(connectionRequest.Id)));
+                            Connections.Remove(Connections.First(cr => cr.Id.Equals(connection.Id)));
                         }
-                        ConnectionRequests.Add(connectionRequest);
+                        Connections.Add(connection);
                         var channelConnections =
-                            ConnectionRequests.Where(cr => cr.Channel.Equals(connectionRequest.Channel)).ToArray();
-                        Terminal.LogLine($"Channel {connectionRequest.Channel} has {channelConnections.Count()} connections.", ConsoleColor.DarkGray);
+                            Connections.Where(cr => cr.Channel.Equals(connection.Channel)).ToArray();
+                        Terminal.LogLine($"Channel {connection.Channel} has {channelConnections.Count()} connections.", ConsoleColor.DarkGray);
                         if (channelConnections.Count() == 2)
                         {
                             await SendAcknowledgement(channelConnections.ElementAt(0), channelConnections.ElementAt(1));
                         }
                         break;
                     case MessageType.Disconnect:
-                        ConnectionRequests.RemoveAll(cr => cr.Id.Equals(requestMessage.ConnectionId));
+                        Connections.RemoveAll(cr => cr.Id.Equals(requestMessage.ConnectionId));
                         Terminal.LogLine($"Client {requestMessage.ConnectionId} disconnected from channel {requestMessage.Channel}", ConsoleColor.Yellow);
                         await SendMessage(requestMessage);
                         break;
                     default:
-                        if (!Sw.IsRunning) Sw.Start();
+                        if (!Elapsed.IsRunning) Elapsed.Start();
                         await SendMessage(requestMessage);
                         break;
                 }
@@ -86,22 +92,41 @@ namespace Ryora.UdpServer
             }
         }
 
-        private static async Task SendMessage(UdpMessage requestMessage)
+        private async Task SendMessage(UdpMessage requestMessage)
         {
             var destination =
-                ConnectionRequests.FirstOrDefault(
+                Connections.FirstOrDefault(
                     cr => cr.Channel.Equals(requestMessage.Channel) && !cr.Id.Equals(requestMessage.ConnectionId));
             if (destination == null) return;
             await Client.SendAsync(requestMessage.Bytes, requestMessage.Bytes.Length, destination.IpEndPoint);
+            destination.Duration.Restart();
         }
 
-        internal static async Task SendAcknowledgement(ConnectionRequest firstRequest, ConnectionRequest secondRequest)
+        private async Task SendAcknowledgement(Connection first, Connection second)
         {
-            var message = Messaging.CreateMessage(new AcknowledgeMessage(secondRequest.ScreenWidth, secondRequest.ScreenHeight), ServerId, firstRequest.Channel, 0);
-            await Client.SendAsync(message, message.Length, firstRequest.IpEndPoint);
-            message = Messaging.CreateMessage(new AcknowledgeMessage(firstRequest.ScreenWidth, firstRequest.ScreenHeight), ServerId, secondRequest.Channel, 0);
-            await Client.SendAsync(message, message.Length, secondRequest.IpEndPoint);
-            Terminal.LogLine($"  Sent Connection Acknowledgement to channel {firstRequest.Channel} {firstRequest.Id}({firstRequest.IpEndPoint}) and {secondRequest.Id}({secondRequest.IpEndPoint})", ConsoleColor.DarkGreen);
+            var message = Messaging.CreateMessage(new AcknowledgeMessage(second.ScreenWidth, second.ScreenHeight), ServerId, first.Channel, 0);
+            await Client.SendAsync(message, message.Length, first.IpEndPoint);
+            message = Messaging.CreateMessage(new AcknowledgeMessage(first.ScreenWidth, first.ScreenHeight), ServerId, second.Channel, 0);
+            await Client.SendAsync(message, message.Length, second.IpEndPoint);
+            Terminal.LogLine($"  Sent Connection Acknowledgement to channel {first.Channel} {first.Id}({first.IpEndPoint}) and {second.Id}({second.IpEndPoint})", ConsoleColor.DarkGreen);
+            first.Duration.Restart();
+            second.Duration.Restart();
+        }
+
+        private void SetUpKeepaliveTimer()
+        {
+            Timer keepaliveTimer = new Timer(1000);
+            keepaliveTimer.Elapsed += async (s, e) =>
+            {
+                foreach (var connection in Connections.Where(c => c.Duration.ElapsedMilliseconds >= KeepaliveTimeout))
+                {
+                    Terminal.LogLine($"Sending keep alive message to {connection.IpEndPoint} on channel {connection.Channel}");
+                    var keepaliveMessage = Messaging.CreateMessage(MessageType.KeepAlive, ServerId, connection.Channel, 0);
+                    await Client.SendAsync(keepaliveMessage, keepaliveMessage.Length, connection.IpEndPoint);
+                    connection.Duration.Restart();
+                }
+            };
+            keepaliveTimer.Start();
         }
     }
 }

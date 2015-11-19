@@ -6,15 +6,12 @@ namespace Ryora.Udp
 {
     public enum MessageType
     {
-        Connect = 0,
-        Disconnect = 1,
-        Acknowledge = 2,
-        MouseMessage = 3,
-        Image = 4,
-
-        //Data = 3,
-        //DataFragment = 4,
-        //LastDataFragment = 5
+        KeepAlive = 0,
+        Connect = 1,
+        Disconnect = 2,
+        Acknowledge = 3,
+        MouseMessage = 4,
+        Image = 5
     }
 
     public static class Messaging

@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Ryora.UdpServer
+﻿namespace Ryora.UdpServer
 {
     class Program
     {
         static void Main(string[] args)
         {
+            var udpService = new UdpService();
             while (true)
             {
-                UdpService.Listen().Wait();
+                udpService.Listen().Wait();
             }
         }
     }
