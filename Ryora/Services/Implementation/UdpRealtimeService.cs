@@ -14,6 +14,7 @@ namespace Ryora.Client.Services.Implementation
         public event EventHandler MouseMove;
 
         private IPEndPoint ServerEndPoint = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
+        private int Throttle { get; } = 5;
         private short ConnectionId { get; set; }
         private UdpClient Client = new UdpClient();
         private bool IsConnected { get; set; } = false;
@@ -93,7 +94,7 @@ namespace Ryora.Client.Services.Implementation
                     ConnectionId, channel, messageId);
 
                 await Client.SendAsync(message, message.Length, ServerEndPoint);
-                if (offset > 70000)
+                if (sequence % Throttle == 0)
                     await Task.Delay(1);
             }
         }
