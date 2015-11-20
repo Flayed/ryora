@@ -42,7 +42,6 @@ namespace Ryora.Udp
                             b |= (byte)offset;
                         offset = offset << 1;
                     }
-                    Console.WriteLine($"Mouse Button Byte: {b}");
 
                     bytes.Add(b);
                 }

@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -71,6 +72,35 @@ namespace Ryora.Tech.Services.Implementation
                 }
             }
 
+            var source = new BitmapImage();
+            using (Stream stream = new MemoryStream())
+            {
+                PrimaryBitmap.Save(stream, ImageFormat.Bmp);
+                source.BeginInit();
+                source.StreamSource = stream;
+                source.CacheOption = BitmapCacheOption.OnLoad;
+                source.EndInit();
+            }
+            return source;
+        }
+
+        public BitmapSource ProcessBitmaps(IEnumerable<ImageFragment> images)
+        {
+            using (var graphics = Graphics.FromImage(PrimaryBitmap))
+            {
+                foreach (var image in images)
+                {
+                    using (var ms = new MemoryStream(image.Image))
+                    {
+                        using (var bmp = new Bitmap(ms))
+                        {
+
+                            graphics.DrawImage(bmp, image.ImageLocation, 0, 0, image.ImageLocation.Width,
+                                image.ImageLocation.Height, GraphicsUnit.Pixel);
+                        }
+                    }
+                }
+            }
             var source = new BitmapImage();
             using (Stream stream = new MemoryStream())
             {

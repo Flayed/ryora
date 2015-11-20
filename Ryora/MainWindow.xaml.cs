@@ -2,7 +2,6 @@
 using Ryora.Client.Models;
 using Ryora.Client.Services;
 using Ryora.Client.Services.Implementation;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -17,16 +16,14 @@ namespace Ryora.Client
     /// </summary>
     public partial class MainWindow : Window
     {
-        public IRealtimeService RealtimeService;
-        public IScreenshotService ScreenshotService;
-        public IInputService MouseService;
+        public readonly IRealtimeService RealtimeService;
+        public readonly IScreenshotService ScreenshotService;
+        public readonly IInputService MouseService;
         internal readonly long MouseMoveThrottle = 50;
         internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
         internal short Channel = 1;
 
-        private bool DebugText { get; set; } = false;
-
-        private IKeyboardMouseEvents GlobalKeyboardMouseHook;
+        private readonly IKeyboardMouseEvents GlobalKeyboardMouseHook;
 
         public MainWindow()
         {
@@ -54,11 +51,9 @@ namespace Ryora.Client
             ScreenshotTimer = new TimedProcessor(100, async () =>
             {
                 //var update = ScreenshotService.GetUpdate();
-                List<string> updateMessages = new List<string>();
                 foreach (var update in ScreenshotService.GetUpdates())
                 {
                     if (update == null) return;
-                    updateMessages.Add($"({update.Location.X}, {update.Location.Y})-({update.Location.X + update.Location.Width}, {update.Location.Y + update.Location.Height})");
                     using (var ms = new MemoryStream())
                     {
                         update.Bitmap.Save(ms, GetEncoder(ImageFormat.Jpeg), JpgEncoderParameters);
@@ -67,13 +62,6 @@ namespace Ryora.Client
                             RealtimeService.SendImage(Channel, update.Location.X, update.Location.Y,
                                 update.Location.Width, update.Location.Height, bytes);
                     }
-                }
-                if (DebugText)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ErrorMessage.Text = string.Join("\n", updateMessages);
-                    });
                 }
             });
 

@@ -5,7 +5,9 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -20,7 +22,8 @@ namespace Ryora.Tech
     /// </summary>
     public partial class MainWindow : Window
     {
-        private static int LastFrame { get; set; } = 0;
+        private int ImageTimerTick = 100;
+
         private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
 
         private static short Channel { get; } = 1;
@@ -46,6 +49,26 @@ namespace Ryora.Tech
                 if (ea?.ScreenWidth == 0 || ea?.ScreenHeight == 0) return;
                 ScreenshotService.SetBitmapSize(ea.ScreenWidth, ea.ScreenHeight);
             };
+
+            Timer imageTimer = new Timer(ImageTimerTick);
+            imageTimer.Elapsed += (s, e) =>
+            {
+                try
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        var images = RealtimeService.CompletedImages.ToList();
+                        if (!images.Any()) return;
+                        var source = ScreenshotService.ProcessBitmaps(images);
+                        Screenshot.Source = source;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            };
+            imageTimer.Start();
 
             RealtimeService.NewImage += (o, e) =>
             {
@@ -87,7 +110,6 @@ namespace Ryora.Tech
                     MousePointer.RenderTransform = trans;
                     DoubleAnimation anim1 = new DoubleAnimation(LastPoint.Y, y, TimeSpan.FromMilliseconds(100));
                     DoubleAnimation anim2 = new DoubleAnimation(LastPoint.X, x, TimeSpan.FromMilliseconds(100));
-                    Console.WriteLine($"({LastPoint.X},{LastPoint.Y}) => ({x}, {y})");
                     trans.BeginAnimation(TranslateTransform.YProperty, anim1);
                     trans.BeginAnimation(TranslateTransform.XProperty, anim2);
                     LastPoint = new System.Windows.Point(x, y);

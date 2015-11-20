@@ -289,11 +289,11 @@ namespace Ryora.Client.Services.Implementation
                     }
                     var differenceRectangle = GetDifferenceRectangle(newScreenSegment, screenUpdate.Bitmap);
                     if (!differenceRectangle.HasValue) continue;
-                    ResetScreenUpdate(screenUpdate, newScreenSegment);
-                    var croppedBitmap = CropBitmap(screenUpdate.Bitmap, differenceRectangle.Value);
+                    var croppedBitmap = CropBitmap(newScreenSegment, differenceRectangle.Value);
                     screenUpdates.Add(
                         new ScreenUpdate(TranslateRectangle(screenUpdate.Location, differenceRectangle.Value),
                             croppedBitmap));
+                    ResetScreenUpdate(screenUpdate, newScreenSegment);
                 }
             }
             newScreenshot.Dispose();

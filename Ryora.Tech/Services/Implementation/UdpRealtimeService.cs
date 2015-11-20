@@ -70,7 +70,6 @@ namespace Ryora.Tech.Services.Implementation
 
         public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
         {
-            Console.WriteLine($"Mouse --  L: {leftButton} M: {middleButton} R: {rightButton} 1: {firstExtendedButton} 2: {secondExtendedButton}");
             var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight, leftButton, middleButton, rightButton, firstExtendedButton, secondExtendedButton), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
@@ -102,11 +101,11 @@ namespace Ryora.Tech.Services.Implementation
                             else
                                 imageFragment.AddFragment(imageMessage);
 
-                            if (imageFragment.IsComplete)
-                            {
-                                NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.ImageLocation, imageFragment.Image));
-                                ImageFragments.Remove(imageFragment);
-                            }
+                            //if (imageFragment.IsComplete)
+                            //{
+                            //    NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.ImageLocation, imageFragment.Image));
+                            //    ImageFragments.Remove(imageFragment);
+                            //}
                         }
                         catch (Exception ex)
                         {
@@ -127,6 +126,16 @@ namespace Ryora.Tech.Services.Implementation
         {
             var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
             await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
+        }
+
+        public IEnumerable<ImageFragment> CompletedImages
+        {
+            get
+            {
+                var completedImages = ImageFragments.Where(f => f.IsComplete).ToArray();
+                ImageFragments = ImageFragments.Except(completedImages).ToList();
+                return completedImages;
+            }
         }
 
         public string Transport => "UDP Datagrams!";

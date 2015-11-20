@@ -69,5 +69,7 @@ namespace Ryora.Tech.Services.Implementation
                 return HubConnection.Transport.Name;
             }
         }
+
+        public IEnumerable<ImageFragment> CompletedImages { get; }
     }
 }

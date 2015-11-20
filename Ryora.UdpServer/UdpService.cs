@@ -120,7 +120,7 @@ namespace Ryora.UdpServer
             {
                 foreach (var connection in Connections.Where(c => c.Duration.ElapsedMilliseconds >= KeepaliveTimeout))
                 {
-                    Terminal.LogLine($"Sending keep alive message to {connection.IpEndPoint} on channel {connection.Channel}");
+                    Terminal.LogLine($"Sending keep alive message to {connection.IpEndPoint} on channel {connection.Channel}", ConsoleColor.DarkYellow);
                     var keepaliveMessage = Messaging.CreateMessage(MessageType.KeepAlive, ServerId, connection.Channel, 0);
                     await Client.SendAsync(keepaliveMessage, keepaliveMessage.Length, connection.IpEndPoint);
                     connection.Duration.Restart();

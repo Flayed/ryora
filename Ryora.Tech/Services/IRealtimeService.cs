@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Ryora.Tech.Services.Implementation;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Ryora.Tech.Services
@@ -15,5 +17,7 @@ namespace Ryora.Tech.Services
 
         Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton);
         string Transport { get; }
+
+        IEnumerable<ImageFragment> CompletedImages { get; }
     }
 }
