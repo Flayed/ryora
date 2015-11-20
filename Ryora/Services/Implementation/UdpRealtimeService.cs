@@ -93,6 +93,8 @@ namespace Ryora.Client.Services.Implementation
                     ConnectionId, channel, messageId);
 
                 await Client.SendAsync(message, message.Length, ServerEndPoint);
+                if (offset > 70000)
+                    await Task.Delay(1);
             }
         }
 
