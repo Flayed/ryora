@@ -11,7 +11,8 @@ namespace Ryora.Udp
         Disconnect = 2,
         Acknowledge = 3,
         MouseMessage = 4,
-        Image = 5
+        KeyboardMessage = 5,
+        Image = 6
     }
 
     public static class Messaging

@@ -18,7 +18,7 @@ namespace Ryora.Client
     {
         public readonly IRealtimeService RealtimeService;
         public readonly IScreenshotService ScreenshotService;
-        public readonly IInputService MouseService;
+        public readonly IInputService InputService;
         internal readonly long MouseMoveThrottle = 50;
         internal readonly Stopwatch MouseMoveThrottleTimer = new Stopwatch();
         internal short Channel = 1;
@@ -35,7 +35,7 @@ namespace Ryora.Client
             RealtimeService = new UdpRealtimeService();
             //RealtimeService = new SignalRRealtimeService(Channel);
             ScreenshotService = new BitBlitScreenshotService();
-            MouseService = new PInvokeInputService();
+            InputService = new PInvokeInputService();
 
 
             RealtimeService.MissedFragmentEvent += (s, r) =>
@@ -72,12 +72,20 @@ namespace Ryora.Client
                 await RealtimeService.SendMouseCoords(Channel, e.X, e.Y, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
             };
 
-            RealtimeService.MouseMove += (s, e) =>
+            RealtimeService.MouseInput += (s, e) =>
             {
                 if (!IsStreaming) return;
                 var ea = e as MouseMessageEventArgs;
                 if (ea == null || ea.X == 0 || ea.Y == 0 || ea.ScreenWidth == 0 || ea.ScreenHeight == 0) return;
-                MouseService.SetMousePosition(ea.X, ea.Y, ea.ScreenWidth, ea.ScreenHeight, ea.LeftButton, ea.MiddleButton, ea.RightButton);
+                InputService.SetMousePosition(ea.X, ea.Y, ea.ScreenWidth, ea.ScreenHeight, ea.LeftButton, ea.MiddleButton, ea.RightButton);
+            };
+
+            RealtimeService.KeyboardInput += (s, e) =>
+            {
+                if (!IsStreaming) return;
+                var ea = e as KeyboardEventArgs;
+                if (ea == null || ea.Keys.Length == 0) return;
+                InputService.SendKeys(ea.IsDown, ea.Keys);
             };
         }
 

@@ -1,4 +1,5 @@
-﻿using Ryora.Tech.Models;
+﻿using NLog;
+using Ryora.Tech.Models;
 using Ryora.Tech.Services;
 using Ryora.Tech.Services.Implementation;
 using System;
@@ -25,6 +26,8 @@ namespace Ryora.Tech
         private int ImageTimerTick = 100;
 
         private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
+
+        private static Logger Log = LogManager.GetCurrentClassLogger();
 
         private static short Channel { get; } = 1;
         internal readonly long MouseMoveThrottle = 50;
@@ -140,6 +143,9 @@ namespace Ryora.Tech
             MouseDown += async (s, e) => { await MouseEvent(s, e); };
             MouseUp += async (s, e) => { await MouseEvent(s, e); };
 
+            KeyDown += async (s, e) => { await KeyboardEvent(true, e); };
+            KeyUp += async (s, e) => { await KeyboardEvent(false, e); };
+
             Task.Run(async () =>
             {
                 await RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
@@ -148,6 +154,24 @@ namespace Ryora.Tech
                     Title = $"Technician View [Connection Type: {RealtimeService.Transport}]";
                 });
             });
+        }
+
+        private async Task KeyboardEvent(bool isDown, KeyEventArgs e)
+        {
+            await RealtimeService.SendKeyboardInput(Channel, isDown, (new[]
+            {
+                ProcessKey(e.SystemKey),
+                ProcessKey(e.Key)
+            }
+            ).Where(k => k != 0).Distinct().ToArray());
+            e.Handled = true;
+        }
+
+        private short ProcessKey(Key k)
+        {
+            if (k == Key.None || k == Key.System) return 0;
+            var vk = KeyInterop.VirtualKeyFromKey(k);
+            return (short)vk;
         }
 
         private async Task MouseEvent(object sender, MouseEventArgs e)

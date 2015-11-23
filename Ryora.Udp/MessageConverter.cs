@@ -12,7 +12,11 @@ namespace Ryora.Udp
             foreach (var arg in args)
             {
                 List<byte> bytes = new List<byte>();
-                if (arg is bool)
+                if (arg is byte)
+                    bytes.Add((byte)arg);
+                else if (arg is byte[])
+                    bytes.AddRange((byte[])arg);
+                else if (arg is bool)
                     bytes.AddRange(BitConverter.GetBytes((bool)arg));
                 else if (arg is char)
                     bytes.AddRange(BitConverter.GetBytes((char)arg));
@@ -32,6 +36,11 @@ namespace Ryora.Udp
                     bytes.AddRange(BitConverter.GetBytes((ulong)arg));
                 else if (arg is ushort)
                     bytes.AddRange(BitConverter.GetBytes((ushort)arg));
+                else if (arg is short[])
+                {
+                    foreach (var a in (short[])arg)
+                        bytes.AddRange(BitConverter.GetBytes(a));
+                }
                 else if (arg is IEnumerable<bool>)
                 {
                     var offset = 1;
@@ -49,8 +58,7 @@ namespace Ryora.Udp
                     bytes.Add((byte)((int)(MessageType)arg));
                 else if (arg is string)
                     bytes.AddRange(Encoding.Default.GetBytes((string)arg));
-                else if (arg is byte[])
-                    bytes.AddRange((byte[])arg);
+
 
                 byteList.AddRange(bytes);
             }

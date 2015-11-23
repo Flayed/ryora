@@ -1,4 +1,5 @@
-﻿using Ryora.Tech.Models;
+﻿using NLog;
+using Ryora.Tech.Models;
 using Ryora.Udp;
 using Ryora.Udp.Messages;
 using System;
@@ -15,6 +16,7 @@ namespace Ryora.Tech.Services.Implementation
     public class UdpRealtimeService : IRealtimeService
     {
         private IPEndPoint ServerEndPoint { get; } = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
+        private static Logger Log = LogManager.GetCurrentClassLogger();
 
         private const int MissedFragmentThreshold = 10000;
 
@@ -71,6 +73,13 @@ namespace Ryora.Tech.Services.Implementation
         public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
         {
             var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight, leftButton, middleButton, rightButton, firstExtendedButton, secondExtendedButton), ConnectionId, channel, MessageId);
+            await Client.SendAsync(message, message.Length, ServerEndPoint);
+        }
+
+        public async Task SendKeyboardInput(short channel, bool isDown, params short[] scanCodes)
+        {
+            if (scanCodes.Length == 0) return;
+            var message = Messaging.CreateMessage(new KeyboardMessage(isDown, scanCodes), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 

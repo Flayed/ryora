@@ -61,6 +61,11 @@ namespace Ryora.Tech.Services.Implementation
             throw new NotImplementedException();
         }
 
+        public Task SendKeyboardInput(short channel, bool isDown, params short[] virtualKeyCodes)
+        {
+            throw new NotImplementedException();
+        }
+
         public string Transport
         {
             get

@@ -27,4 +27,16 @@ namespace Ryora.Client.Models
             ScreenHeight = screenHeight;
         }
     }
+
+    public class KeyboardEventArgs : EventArgs
+    {
+        public bool IsDown { get; set; }
+        public short[] Keys { get; set; }
+
+        public KeyboardEventArgs(bool isDown, short[] keys)
+        {
+            IsDown = isDown;
+            Keys = keys;
+        }
+    }
 }

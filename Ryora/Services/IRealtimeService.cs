@@ -6,7 +6,9 @@ namespace Ryora.Client.Services
 {
     public interface IRealtimeService
     {
-        event EventHandler MouseMove;
+        event EventHandler MouseInput;
+        event EventHandler<Rectangle> MissedFragmentEvent;
+        event EventHandler KeyboardInput;
 
         Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel);
@@ -15,6 +17,6 @@ namespace Ryora.Client.Services
         Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight);
         Task Sharing(short channel, bool isSharing);
 
-        event EventHandler<Rectangle> MissedFragmentEvent;
+
     }
 }

@@ -8,7 +8,7 @@ namespace Ryora.Client.Services.Implementation
 {
     public class SignalRRealtimeService : IRealtimeService
     {
-        public event EventHandler MouseMove;
+        public event EventHandler MouseInput;
 
         private readonly HubConnection HubConnection;
         private IHubProxy HubProxy;
@@ -26,6 +26,8 @@ namespace Ryora.Client.Services.Implementation
 
             HubConnection.Start();
         }
+
+        public event EventHandler KeyboardInput;
 
         public async Task StartConnection(short channel, int screenWidth, int screenHeight)
         {

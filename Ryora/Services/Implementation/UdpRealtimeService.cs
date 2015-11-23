@@ -11,7 +11,8 @@ namespace Ryora.Client.Services.Implementation
 {
     public class UdpRealtimeService : IRealtimeService
     {
-        public event EventHandler MouseMove;
+        public event EventHandler MouseInput;
+        public event EventHandler KeyboardInput;
 
         private IPEndPoint ServerEndPoint = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
         private int Throttle { get; } = 5;
@@ -60,7 +61,11 @@ namespace Ryora.Client.Services.Implementation
                         break;
                     case MessageType.MouseMessage:
                         var mouseMessage = new MouseMessage(message.Payload);
-                        MouseMove?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight, mouseMessage.LeftButton, mouseMessage.MiddleButton, mouseMessage.RightButton, mouseMessage.FirstExtendedButton, mouseMessage.SecondExtendedButton));
+                        MouseInput?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight, mouseMessage.LeftButton, mouseMessage.MiddleButton, mouseMessage.RightButton, mouseMessage.FirstExtendedButton, mouseMessage.SecondExtendedButton));
+                        break;
+                    case MessageType.KeyboardMessage:
+                        var keyboardMessage = new KeyboardMessage(message.Payload);
+                        KeyboardInput?.Invoke(this, new KeyboardEventArgs(keyboardMessage.IsDown, keyboardMessage.Keys));
                         break;
                 }
             }
