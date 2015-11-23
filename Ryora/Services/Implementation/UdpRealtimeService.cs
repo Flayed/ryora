@@ -35,8 +35,7 @@ namespace Ryora.Client.Services.Implementation
 
         public UdpRealtimeService()
         {
-            //ConnectionId = (short) (new Random().Next(short.MinValue, short.MaxValue));
-            ConnectionId = 1;
+            ConnectionId = MessageConverter.ReadShort(Guid.NewGuid().ToByteArray(), 0);
         }
 
         public async Task StartConnection(short channel, int screenWidth, int screenHeight)
@@ -123,6 +122,7 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task Sharing(short channel, bool isSharing)
         {
+            if (!IsConnected) return;
             var message = Messaging.CreateMessage(new SharingMessage(isSharing), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }

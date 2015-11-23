@@ -23,7 +23,8 @@ namespace Ryora.UdpServer
         private readonly List<Connection> Connections = new List<Connection>();
         private Stopwatch Elapsed { get; set; } = new Stopwatch();
 
-        private int MessagesReceived { get; set; } = 0;
+        private int PreviousMessageIdReceived { get; set; } = 0;
+        private int UniqueMessagesReceived { get; set; } = 0;
         private double BytesUsed { get; set; } = 0;
         private double KilobytesUsed => Math.Round((double)BytesUsed / 1000, 2);
         private double MegabytesUsed => Math.Round((double)BytesUsed / 1000000, 2);
@@ -36,7 +37,7 @@ namespace Ryora.UdpServer
                 return 0;
             }
         }
-        private double AverageMessageSize => Math.Round((KilobytesUsed / MessagesReceived), 2);
+        private double AverageMessageSize => Math.Round((KilobytesUsed / UniqueMessagesReceived), 2);
 
         public UdpService()
         {
@@ -49,11 +50,15 @@ namespace Ryora.UdpServer
             {
                 var request = await Client.ReceiveAsync();
                 var requestMessage = Messaging.ReceiveMessage(request.Buffer);
-                MessagesReceived++;
+                if (requestMessage.MessageId != PreviousMessageIdReceived)
+                {
+                    UniqueMessagesReceived++;
+                    PreviousMessageIdReceived = requestMessage.MessageId;
+                }
                 BytesUsed += request.Buffer.Length;
                 Terminal.Log($"Bytes Used: {BytesUsed}B {KilobytesUsed}KB {MegabytesUsed}MB  ", 0, true);
                 Terminal.Log($"{KilobytesPerSecond} KB/s  ", 0, ConsoleColor.Cyan);
-                Terminal.Log($"Recv: {MessagesReceived}  ", 0, ConsoleColor.Green);
+                Terminal.Log($"Recv: {UniqueMessagesReceived}  ", 0, ConsoleColor.Green);
                 Terminal.Log($"Avg: {AverageMessageSize}KB        ", 0, ConsoleColor.Magenta);
 
                 switch (requestMessage.Type)
@@ -67,9 +72,8 @@ namespace Ryora.UdpServer
                             Connections.Remove(Connections.First(cr => cr.Id.Equals(connection.Id)));
                         }
                         Connections.Add(connection);
-                        var channelConnections =
-                            Connections.Where(cr => cr.Channel.Equals(connection.Channel)).ToArray();
-                        Terminal.LogLine($"Channel {connection.Channel} has {channelConnections.Count()} connections.", ConsoleColor.DarkGray);
+                        Terminal.LogLine($"Channel {connection.Channel} received connection from client {connection.Id} ({connection.IpEndPoint})", ConsoleColor.DarkGreen);
+                        var channelConnections = Connections.Where(cr => cr.Channel.Equals(connection.Channel)).ToArray();
                         if (channelConnections.Count() == 2)
                         {
                             await SendAcknowledgement(channelConnections.ElementAt(0), channelConnections.ElementAt(1));
@@ -108,7 +112,7 @@ namespace Ryora.UdpServer
             await Client.SendAsync(message, message.Length, first.IpEndPoint);
             message = Messaging.CreateMessage(new AcknowledgeMessage(first.ScreenWidth, first.ScreenHeight), ServerId, second.Channel, 0);
             await Client.SendAsync(message, message.Length, second.IpEndPoint);
-            Terminal.LogLine($"  Sent Connection Acknowledgement to channel {first.Channel} {first.Id}({first.IpEndPoint}) and {second.Id}({second.IpEndPoint})", ConsoleColor.DarkGreen);
+            Terminal.LogLine($" Channel {first.Channel} has two clients: {first.Id}({first.IpEndPoint}) and {second.Id}({second.IpEndPoint})", ConsoleColor.Green);
             first.Duration.Restart();
             second.Duration.Restart();
         }

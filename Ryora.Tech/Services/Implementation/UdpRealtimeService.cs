@@ -43,7 +43,7 @@ namespace Ryora.Tech.Services.Implementation
 
         public UdpRealtimeService(short channel)
         {
-            ConnectionId = 2; // (short)(new Random().Next(short.MinValue, short.MaxValue));
+            ConnectionId = MessageConverter.ReadShort(Guid.NewGuid().ToByteArray(), 0);
             var missedFragmentTimer = new System.Timers.Timer(1000);
             missedFragmentTimer.Elapsed += (s, e) =>
             {
@@ -70,13 +70,14 @@ namespace Ryora.Tech.Services.Implementation
 
         public async Task SendMouseCoords(short channel, int x, int y, int wheelDelta, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
         {
+            if (!IsConnected) return;
             var message = Messaging.CreateMessage(new MouseMessage(x, y, wheelDelta, screenWidth, screenHeight, leftButton, middleButton, rightButton, firstExtendedButton, secondExtendedButton), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 
         public async Task SendKeyboardInput(short channel, bool isDown, params short[] scanCodes)
         {
-            if (scanCodes.Length == 0) return;
+            if (!IsConnected || scanCodes.Length == 0) return;
             var message = Messaging.CreateMessage(new KeyboardMessage(isDown, scanCodes), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }

@@ -121,6 +121,12 @@ namespace Ryora.Udp
             return s;
         }
 
+        public static short ReadShort(byte[] data, int offset)
+        {
+            var s = BitConverter.ToInt16(data, offset);
+            return s;
+        }
+
         public static short ReadShort(byte[] data, ref int offset)
         {
             var s = BitConverter.ToInt16(data, offset);
