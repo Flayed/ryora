@@ -8,7 +8,7 @@ namespace Ryora.Tech.Services
     interface IRealtimeService
     {
         event EventHandler MouseMove;
-        event EventHandler Sharing;
+        event EventHandler<bool> Sharing;
         event EventHandler ClientResolutionChanged;
         event EventHandler<bool> Disconnect;
 

@@ -123,9 +123,8 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task Sharing(short channel, bool isSharing)
         {
-            //var message = Messaging.CreateMessage(MessageType.Data, ConnectionId, channel, MessageId, 0, $"Sharing^{isSharing}");
-            //await Client.SendAsync(message, message.Length, ServerEndPoint);
-            await Task.Delay(1);
+            var message = Messaging.CreateMessage(new SharingMessage(isSharing), ConnectionId, channel, MessageId);
+            await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
     }
 }

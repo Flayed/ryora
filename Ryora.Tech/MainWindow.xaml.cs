@@ -112,13 +112,11 @@ namespace Ryora.Tech
                 });
             };
 
-            RealtimeService.Sharing += (o, e) =>
+            RealtimeService.Sharing += (o, isSharing) =>
             {
-                var ea = e as SharingEventArgs;
-                if (ea == null) return;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (!ea.IsSharing)
+                    if (!isSharing)
                     {
                         PausedOverlay.Visibility = Visibility.Visible;
                         PausedText.Visibility = Visibility.Visible;

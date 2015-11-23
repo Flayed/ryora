@@ -43,7 +43,7 @@ namespace Ryora.Client
 
             ScreenshotTimer = new TimedProcessor(100, async () =>
             {
-                //var update = ScreenshotService.GetUpdate();
+                if (!IsStreaming) return;
                 foreach (var update in ScreenshotService.GetUpdates())
                 {
                     if (update == null) return;
@@ -83,6 +83,7 @@ namespace Ryora.Client
 
             RealtimeService.Connect += async (s, e) =>
             {
+                if (!IsStreaming) return;
                 var update = ScreenshotService.GetUpdate();
                 using (var ms = new MemoryStream())
                 {

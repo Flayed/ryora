@@ -31,16 +31,6 @@ namespace Ryora.Tech.Models
         }
     }
 
-    public class SharingEventArgs : EventArgs
-    {
-        public bool IsSharing { get; set; }
-
-        public SharingEventArgs(bool isSharing)
-        {
-            IsSharing = isSharing;
-        }
-    }
-
     public class ClientResolutionChangedEventArgs : EventArgs
     {
         public short ScreenWidth { get; set; }

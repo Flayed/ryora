@@ -48,6 +48,7 @@
     <Compile Include="Messages\IMessage.cs" />
     <Compile Include="Messages\KeyboardMessage.cs" />
     <Compile Include="Messages\MouseMessage.cs" />
+    <Compile Include="Messages\SharingMessage.cs" />
     <Compile Include="Messaging.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

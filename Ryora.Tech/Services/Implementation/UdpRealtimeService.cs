@@ -39,7 +39,7 @@ namespace Ryora.Tech.Services.Implementation
         }
 
         public event EventHandler MouseMove;
-        public event EventHandler Sharing;
+        public event EventHandler<bool> Sharing;
         public event EventHandler ClientResolutionChanged;
         public event EventHandler<bool> Disconnect;
 
@@ -102,6 +102,10 @@ namespace Ryora.Tech.Services.Implementation
                             new ClientResolutionChangedEventArgs(acknowledgeMessage.ScreenWidth, acknowledgeMessage.ScreenHeight));
                         IsConnected = true;
                         break;
+                    case MessageType.Sharing:
+                        var sharingMessage = new SharingMessage(message.Payload);
+                        Sharing?.Invoke(this, sharingMessage.IsSharing);
+                        break;
                     case MessageType.Image:
                         var imageMessage = new ImageMessage(message.Payload);
                         try
@@ -114,12 +118,6 @@ namespace Ryora.Tech.Services.Implementation
                             }
                             else
                                 imageFragment.AddFragment(imageMessage);
-
-                            //if (imageFragment.IsComplete)
-                            //{
-                            //    NewImage?.Invoke(this, new NewImageEventArgs(imageFragment.ImageLocation, imageFragment.Image));
-                            //    ImageFragments.Remove(imageFragment);
-                            //}
                         }
                         catch (Exception ex)
                         {
