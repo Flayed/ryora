@@ -28,6 +28,7 @@ namespace Ryora.Client.Services.Implementation
         }
 
         public event EventHandler KeyboardInput;
+        public event EventHandler Disconnect;
 
         public async Task StartConnection(short channel, int screenWidth, int screenHeight)
         {

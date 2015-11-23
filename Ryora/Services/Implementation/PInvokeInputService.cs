@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Ryora.Client.Services.Implementation
@@ -1170,6 +1171,18 @@ namespace Ryora.Client.Services.Implementation
             SendInput((uint)inputList.Length, inputList, INPUT.Size);
         }
 
+        public void Reset()
+        {
+            List<INPUT> inputList = new List<INPUT>();
+
+            var mouseReset = Mouse.Reset();
+            if (mouseReset.Any()) inputList.AddRange(mouseReset);
+            var keyboardReset = Keyboard.Reset();
+            if (keyboardReset.Any()) inputList.AddRange(keyboardReset);
+
+            SendInput((uint)inputList.Count, inputList.ToArray(), INPUT.Size);
+        }
+
         #region MouseHandler
 
         private class MouseHandler
@@ -1210,6 +1223,14 @@ namespace Ryora.Client.Services.Implementation
                 return inputList.ToArray();
             }
 
+            public INPUT[] Reset()
+            {
+                var inputList = new List<INPUT>();
+                inputList.AddIfNotNull(HandleMouseButton(MouseButton.Left, false));
+                inputList.AddIfNotNull(HandleMouseButton(MouseButton.Middle, false));
+                inputList.AddIfNotNull(HandleMouseButton(MouseButton.Right, false));
+                return inputList.ToArray();
+            }
 
             private bool GetButtonState(MouseButton button)
             {
@@ -1295,12 +1316,13 @@ namespace Ryora.Client.Services.Implementation
         private class KeyboardHandler
         {
             private bool CtrlDown { get; set; } = false;
-            private bool AltDown { get; set; } = false;
+            private bool LeftAltDown { get; set; } = false;
+            private bool RightAltDown { get; set; } = false;
             private bool ShiftDown { get; set; } = false;
 
             public INPUT[] Handle(bool isDown, short[] keys)
             {
-                List<INPUT> nonModifierKeys = new List<INPUT>();
+                List<INPUT> inputList = new List<INPUT>();
 
                 foreach (var key in keys)
                 {
@@ -1308,27 +1330,51 @@ namespace Ryora.Client.Services.Implementation
                     switch (wVk)
                     {
                         case VirtualKeyShort.SHIFT:
-                            ShiftDown = isDown;
+                            if (ShiftDown != isDown)
+                            {
+                                ShiftDown = isDown;
+                                inputList.Add(AddKey(wVk, isDown));
+                            }
                             break;
                         case VirtualKeyShort.CONTROL:
-                            CtrlDown = isDown;
+                            if (CtrlDown != isDown)
+                            {
+                                CtrlDown = isDown;
+                                inputList.Add(AddKey(wVk, isDown));
+                            }
                             break;
                         case VirtualKeyShort.MENU:
-                            AltDown = isDown;
+                            if (RightAltDown != isDown)
+                            {
+                                Log.Info($"Right Alt {(isDown ? "pressed" : "released")}");
+                                RightAltDown = isDown;
+                                inputList.Add(AddKey(wVk, isDown));
+                            }
+                            break;
+                        case VirtualKeyShort.LMENU:
+                            if (LeftAltDown != isDown)
+                            {
+                                Log.Info($"Left Alt {(isDown ? "pressed" : "released")}");
+                                LeftAltDown = isDown;
+                                inputList.Add(AddKey(wVk, isDown));
+                            }
                             break;
                         default:
-                            nonModifierKeys.Add(AddKey(key, isDown));
+                            inputList.Add(AddKey(key, isDown));
                             break;
                     }
                 }
 
+                return inputList.ToArray();
+            }
+
+            public INPUT[] Reset()
+            {
                 List<INPUT> inputList = new List<INPUT>();
-
-                if (ShiftDown) inputList.Add(AddKey(VirtualKeyShort.SHIFT, isDown));
-                if (CtrlDown) inputList.Add(AddKey(VirtualKeyShort.CONTROL, isDown));
-                if (AltDown) inputList.Add(AddKey(VirtualKeyShort.MENU, isDown));
-                inputList.AddRange(nonModifierKeys);
-
+                if (ShiftDown) inputList.Add(AddKey(VirtualKeyShort.SHIFT, false));
+                if (CtrlDown) inputList.Add(AddKey(VirtualKeyShort.CONTROL, false));
+                if (RightAltDown) inputList.Add(AddKey(VirtualKeyShort.MENU, false));
+                if (LeftAltDown) inputList.Add(AddKey(VirtualKeyShort.LMENU, true));
                 return inputList.ToArray();
             }
 
@@ -1343,7 +1389,7 @@ namespace Ryora.Client.Services.Implementation
                         {
                             wVk = key,
                             wScan = 0,
-                            dwFlags = (isDown ? 0 : KEYEVENTF.KEYUP),
+                            dwFlags = (isDown ? 0 : KEYEVENTF.KEYUP) | (IsExtendedKey(key) ? KEYEVENTF.EXTENDEDKEY : 0),
                             time = 0,
                             dwExtraInfo = UIntPtr.Zero
                         }
@@ -1354,6 +1400,26 @@ namespace Ryora.Client.Services.Implementation
             private INPUT AddKey(short key, bool isDown)
             {
                 return AddKey((VirtualKeyShort)key, isDown);
+            }
+
+            private bool IsExtendedKey(VirtualKeyShort key)
+            {
+                switch (key)
+                {
+                    case VirtualKeyShort.UP:
+                    case VirtualKeyShort.DOWN:
+                    case VirtualKeyShort.LEFT:
+                    case VirtualKeyShort.RIGHT:
+                    case VirtualKeyShort.HOME:
+                    case VirtualKeyShort.END:
+                    case VirtualKeyShort.PRIOR: // page up
+                    case VirtualKeyShort.NEXT: // page down
+                    case VirtualKeyShort.INSERT:
+                    case VirtualKeyShort.DELETE:
+                        return true;
+                    default:
+                        return false;
+                }
             }
         }
     }

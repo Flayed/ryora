@@ -9,6 +9,7 @@ namespace Ryora.Client.Services
         event EventHandler MouseInput;
         event EventHandler<Rectangle> MissedFragmentEvent;
         event EventHandler KeyboardInput;
+        event EventHandler Disconnect;
 
         Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel);

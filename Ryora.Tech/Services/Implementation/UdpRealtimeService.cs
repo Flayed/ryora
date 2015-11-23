@@ -66,7 +66,7 @@ namespace Ryora.Tech.Services.Implementation
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
-                await ListenAsync();
+                await ListenAsync(channel);
             });
         }
 
@@ -83,14 +83,19 @@ namespace Ryora.Tech.Services.Implementation
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 
-        private async Task ListenAsync()
+        private async Task ListenAsync(short channel)
         {
-            while (true)
+            bool listening = true;
+            while (listening)
             {
                 var result = await Client.ReceiveAsync();
                 var message = Messaging.ReceiveMessage(result.Buffer);
                 switch (message.Type)
                 {
+                    case MessageType.Disconnect:
+                        await EndConnection(channel);
+                        listening = false;
+                        break;
                     case MessageType.Acknowledge:
                         var acknowledgeMessage = new AcknowledgeMessage(message.Payload);
                         ClientResolutionChanged?.Invoke(this,
@@ -135,6 +140,7 @@ namespace Ryora.Tech.Services.Implementation
         {
             var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
             await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
+            IsConnected = false;
         }
 
         public IEnumerable<ImageFragment> CompletedImages

@@ -87,6 +87,11 @@ namespace Ryora.Client
                 if (ea == null || ea.Keys.Length == 0) return;
                 InputService.SendKeys(ea.IsDown, ea.Keys);
             };
+
+            RealtimeService.Disconnect += (s, e) =>
+            {
+                InputService.Reset();
+            };
         }
 
         public readonly EncoderParameters EncoderParameters = new EncoderParameters(1)

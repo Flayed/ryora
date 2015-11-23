@@ -13,6 +13,7 @@ namespace Ryora.Client.Services.Implementation
     {
         public event EventHandler MouseInput;
         public event EventHandler KeyboardInput;
+        public event EventHandler Disconnect;
 
         private IPEndPoint ServerEndPoint = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
         private int Throttle { get; } = 5;
@@ -43,18 +44,25 @@ namespace Ryora.Client.Services.Implementation
             await Client.SendAsync(connectMessage, connectMessage.Length, ServerEndPoint);
             await Task.Run(async () =>
             {
-                await ListenAsync();
+                await ListenAsync(channel);
             });
         }
 
-        private async Task ListenAsync()
+        private async Task ListenAsync(short channel)
         {
-            while (true)
+            bool listening = true;
+            while (listening)
             {
                 var result = await Client.ReceiveAsync();
                 var message = Messaging.ReceiveMessage(result.Buffer);
                 switch (message.Type)
                 {
+                    case MessageType.Disconnect:
+                        Disconnect?.Invoke(this, new EventArgs());
+                        IsConnected = false;
+                        await EndConnection(channel);
+                        listening = false;
+                        break;
                     case MessageType.Acknowledge:
                         Console.WriteLine("Connected and good to go!");
                         IsConnected = true;
@@ -84,6 +92,7 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task SendImage(short channel, int x, int y, int width, int height, byte[] image)
         {
+            if (!IsConnected) return;
             var messageId = MessageId;
             short sequence = 0;
             var offset = 0;
@@ -106,6 +115,7 @@ namespace Ryora.Client.Services.Implementation
 
         public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight)
         {
+            if (!IsConnected) return;
             var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
