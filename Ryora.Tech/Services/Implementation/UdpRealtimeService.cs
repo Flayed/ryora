@@ -1,5 +1,4 @@
-﻿using NLog;
-using Ryora.Tech.Models;
+﻿using Ryora.Tech.Models;
 using Ryora.Udp;
 using Ryora.Udp.Messages;
 using System;
@@ -16,7 +15,6 @@ namespace Ryora.Tech.Services.Implementation
     public class UdpRealtimeService : IRealtimeService
     {
         private IPEndPoint ServerEndPoint { get; } = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
-        private static Logger Log = LogManager.GetCurrentClassLogger();
 
         private const int MissedFragmentThreshold = 10000;
 

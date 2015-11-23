@@ -1,5 +1,4 @@
-﻿using NLog;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -1152,7 +1151,6 @@ namespace Ryora.Client.Services.Implementation
 
 
 
-        private static Logger Log = LogManager.GetCurrentClassLogger();
         private const double Width = 65536;
         private const double Height = 65536;
         private MouseHandler Mouse { get; set; } = new MouseHandler();
@@ -1346,7 +1344,6 @@ namespace Ryora.Client.Services.Implementation
                         case VirtualKeyShort.MENU:
                             if (RightAltDown != isDown)
                             {
-                                Log.Info($"Right Alt {(isDown ? "pressed" : "released")}");
                                 RightAltDown = isDown;
                                 inputList.Add(AddKey(wVk, isDown));
                             }
@@ -1354,7 +1351,6 @@ namespace Ryora.Client.Services.Implementation
                         case VirtualKeyShort.LMENU:
                             if (LeftAltDown != isDown)
                             {
-                                Log.Info($"Left Alt {(isDown ? "pressed" : "released")}");
                                 LeftAltDown = isDown;
                                 inputList.Add(AddKey(wVk, isDown));
                             }

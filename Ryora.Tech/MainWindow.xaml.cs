@@ -1,5 +1,4 @@
-﻿using NLog;
-using Ryora.Tech.Models;
+﻿using Ryora.Tech.Models;
 using Ryora.Tech.Services;
 using Ryora.Tech.Services.Implementation;
 using System;
@@ -26,8 +25,6 @@ namespace Ryora.Tech
         private int ImageTimerTick = 100;
 
         private static System.Windows.Point LastPoint { get; set; } = new System.Windows.Point(0, 0);
-
-        private static Logger Log = LogManager.GetCurrentClassLogger();
 
         private static short Channel { get; } = 1;
         internal readonly long MouseMoveThrottle = 50;
