@@ -1,9 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNet.SignalR;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR;
 
 namespace Ryora.Server.Hubs
 {
@@ -32,27 +29,9 @@ namespace Ryora.Server.Hubs
             await base.OnConnected();
         }
 
-        public async Task Share(short channel, bool isSharing)
+        public async Task SendImage(short channel, int x, int y, int width, int height, byte[] image)
         {
-            await Clients.Group(channel.ToString()).Share(isSharing);
-        }
-
-        public async Task SendImage(short channel, int frame, byte[] image)
-        {
-            await Clients.Group(channel.ToString()).NewImage(frame, image);
-            await Clients.Group(DataChannel).MoreData(channel, image.Length * 8 + 1 + 16 + 32);
-        }
-
-        public async Task SendImageFragment(short channel, int frame, int x, int y, int width, int height, byte[] image)
-        {
-            await Clients.Group(channel.ToString()).NewImageFragment(frame, x, y, width, height, image);
-            await Clients.Group(DataChannel).MoreData(channel, image.Length * 8 + 16 + 32 + 32 + 32 + 32 + 32);
-        }
-
-        public async Task SendMouseCoords(short channel, double x, double y)
-        {
-            await Clients.Group(channel.ToString()).MouseMove(x, y);
-            await Clients.Group(DataChannel).MoreData(channel, 128 + 16);
+            await Clients.Group(channel.ToString()).SendImage(x, y, width, height, image);
         }
     }
 }

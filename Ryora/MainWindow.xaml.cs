@@ -33,15 +33,8 @@ namespace Ryora.Client
 
             MouseMoveThrottleTimer.Start();
             RealtimeService = new UdpRealtimeService();
-            //RealtimeService = new SignalRRealtimeService(Channel);
             ScreenshotService = new BitBlitScreenshotService();
             InputService = new PInvokeInputService();
-
-
-            RealtimeService.MissedFragmentEvent += (s, r) =>
-            {
-                ScreenshotService.ForceUpdate(r);
-            };
 
             Task.Run(async () =>
             {
@@ -88,9 +81,26 @@ namespace Ryora.Client
                 InputService.SendKeys(ea.IsDown, ea.Keys);
             };
 
+            RealtimeService.Connect += async (s, e) =>
+            {
+                var update = ScreenshotService.GetUpdate();
+                using (var ms = new MemoryStream())
+                {
+                    update.Bitmap.Save(ms, GetEncoder(ImageFormat.Jpeg), JpgEncoderParameters);
+                    var bytes = ms.GetBuffer();
+                    await
+                        RealtimeService.SendImage(Channel, update.Location.X, update.Location.Y,
+                            update.Location.Width, update.Location.Height, bytes);
+                }
+            };
+
             RealtimeService.Disconnect += (s, e) =>
             {
                 InputService.Reset();
+                Task.Run(async () =>
+                {
+                    await RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
+                });
             };
         }
 

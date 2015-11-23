@@ -42,7 +42,6 @@ namespace Ryora.Tech
             InitializeComponent();
             MouseMoveThrottleTimer.Start();
             MousePointer.Source = GetMousePointerImage();
-            //RealtimeService = new SignalRRealtimeService(Channel);
             RealtimeService = new UdpRealtimeService(Channel);
             ScreenshotService = new ScreenshotService();
 
@@ -73,23 +72,17 @@ namespace Ryora.Tech
             };
             imageTimer.Start();
 
-            RealtimeService.NewImage += (o, e) =>
+            RealtimeService.Disconnect += (s, reconnect) =>
             {
-                var ea = e as NewImageEventArgs;
-                if (ea?.Image == null) return;
-                Application.Current.Dispatcher.Invoke(() =>
+                if (reconnect)
                 {
-                    try
+                    Task.Run(async () =>
                     {
-                        var source = ScreenshotService.ProcessBitmap(ea.Location, ea.Image);
-                        if (source == null) return;
-                        Screenshot.Source = source;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                });
+                        await
+                            RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth,
+                                ScreenshotService.ScreenHeight);
+                    });
+                }
             };
 
             RealtimeService.MouseMove += (o, e) =>

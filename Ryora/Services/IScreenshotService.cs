@@ -1,6 +1,5 @@
 ﻿using Ryora.Client.Models;
 using System.Collections.Generic;
-using System.Drawing;
 
 namespace Ryora.Client.Services
 {
@@ -8,8 +7,7 @@ namespace Ryora.Client.Services
     {
         int ScreenWidth { get; }
         int ScreenHeight { get; }
-        ScreenUpdate GetUpdate();
+        ScreenUpdate GetUpdate(int x = 0, int y = 0, int? updateWidth = null, int? updateHeight = null);
         IEnumerable<ScreenUpdate> GetUpdates();
-        void ForceUpdate(Rectangle updateRectangle);
     }
 }

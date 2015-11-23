@@ -13,7 +13,8 @@ namespace Ryora.Client.Services.Implementation
     {
         public event EventHandler MouseInput;
         public event EventHandler KeyboardInput;
-        public event EventHandler Disconnect;
+        public event EventHandler<bool> Disconnect;
+        public event EventHandler Connect;
 
         private IPEndPoint ServerEndPoint = new IPEndPoint(IPAddress.Parse("40.122.170.146"), 27816);
         private int Throttle { get; } = 5;
@@ -58,14 +59,13 @@ namespace Ryora.Client.Services.Implementation
                 switch (message.Type)
                 {
                     case MessageType.Disconnect:
-                        Disconnect?.Invoke(this, new EventArgs());
                         IsConnected = false;
-                        await EndConnection(channel);
+                        await EndConnection(channel, true);
                         listening = false;
                         break;
                     case MessageType.Acknowledge:
-                        Console.WriteLine("Connected and good to go!");
                         IsConnected = true;
+                        Connect?.Invoke(this, new EventArgs());
                         break;
                     case MessageType.MouseMessage:
                         var mouseMessage = new MouseMessage(message.Payload);
@@ -79,10 +79,11 @@ namespace Ryora.Client.Services.Implementation
             }
         }
 
-        public async Task EndConnection(short channel)
+        public async Task EndConnection(short channel, bool reconnect = false)
         {
             var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
             await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
+            Disconnect?.Invoke(this, reconnect);
         }
 
         public Task SendImage(short channel, Rectangle rect, byte[] image)
@@ -126,7 +127,5 @@ namespace Ryora.Client.Services.Implementation
             //await Client.SendAsync(message, message.Length, ServerEndPoint);
             await Task.Delay(1);
         }
-
-        public event EventHandler<Rectangle> MissedFragmentEvent;
     }
 }

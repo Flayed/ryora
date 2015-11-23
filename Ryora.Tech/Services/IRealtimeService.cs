@@ -7,13 +7,13 @@ namespace Ryora.Tech.Services
 {
     interface IRealtimeService
     {
-        event EventHandler NewImage;
         event EventHandler MouseMove;
         event EventHandler Sharing;
         event EventHandler ClientResolutionChanged;
+        event EventHandler<bool> Disconnect;
 
         Task StartConnection(short channel, int screenWidth, int screenHeight);
-        Task EndConnection(short channel);
+        Task EndConnection(short channel, bool reconnect = false);
 
         Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton);
 

@@ -38,10 +38,10 @@ namespace Ryora.Tech.Services.Implementation
             }
         }
 
-        public event EventHandler NewImage;
         public event EventHandler MouseMove;
         public event EventHandler Sharing;
         public event EventHandler ClientResolutionChanged;
+        public event EventHandler<bool> Disconnect;
 
         public UdpRealtimeService(short channel)
         {
@@ -93,7 +93,7 @@ namespace Ryora.Tech.Services.Implementation
                 switch (message.Type)
                 {
                     case MessageType.Disconnect:
-                        await EndConnection(channel);
+                        await EndConnection(channel, true);
                         listening = false;
                         break;
                     case MessageType.Acknowledge:
@@ -136,11 +136,12 @@ namespace Ryora.Tech.Services.Implementation
             }
         }
 
-        public async Task EndConnection(short channel)
+        public async Task EndConnection(short channel, bool reconnect = false)
         {
             var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
             await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
             IsConnected = false;
+            Disconnect?.Invoke(this, reconnect);
         }
 
         public IEnumerable<ImageFragment> CompletedImages

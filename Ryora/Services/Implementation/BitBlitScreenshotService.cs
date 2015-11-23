@@ -307,27 +307,24 @@ namespace Ryora.Client.Services.Implementation
             screenUpdate.Bitmap = (Bitmap)newScreenSegment.Clone();
         }
 
-        public ScreenUpdate GetUpdate()
+        public ScreenUpdate GetUpdate(int x = 0, int y = 0, int? updateWidth = null, int? updateHeight = null)
         {
-            //var newScreenshot = TakeScreenshot();
-            //if (PreviousScreen == null)
-            //{
-            //    PreviousScreen = newScreenshot;
-            //    return new ScreenUpdate(0, 0, 1920, 1080, newScreenshot);
-            //}
+            var width = updateWidth ?? ScreenWidth;
+            var height = updateHeight ?? ScreenHeight;
 
-            //var difference = GetDifferenceRectangle(PreviousScreen, newScreenshot);
-            //if (!difference.HasValue) return null;
+            ScreenUpdate update = new ScreenUpdate(x, y, width, height, null);
 
-            //PreviousScreen = newScreenshot;
-            //var differenceBitmap = CropBitmap(newScreenshot, difference.Value);
-            //return new ScreenUpdate(difference.Value, differenceBitmap);
-            return null;
-        }
-
-        public void ForceUpdate(Rectangle updateRectangle)
-        {
-            //Cache.ForceUpdate(updateRectangle);
+            var newScreenshot = TakeScreenshot();
+            if (width == ScreenWidth && height == ScreenHeight)
+                update.Bitmap = (Bitmap)newScreenshot.Clone();
+            else
+            {
+                var croppedBitmap = CropBitmap(newScreenshot, new Rectangle(x, y, width, height));
+                update.Bitmap = (Bitmap)croppedBitmap.Clone();
+                croppedBitmap.Dispose();
+            }
+            newScreenshot.Dispose();
+            return update;
         }
 
         private Bitmap TakeScreenshot(Rectangle bounds)
