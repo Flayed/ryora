@@ -69,7 +69,7 @@ namespace Ryora.Client.Services.Implementation
                         break;
                     case MessageType.MouseMessage:
                         var mouseMessage = new MouseMessage(message.Payload);
-                        MouseInput?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight, mouseMessage.LeftButton, mouseMessage.MiddleButton, mouseMessage.RightButton, mouseMessage.FirstExtendedButton, mouseMessage.SecondExtendedButton));
+                        MouseInput?.Invoke(this, new MouseMessageEventArgs(mouseMessage.X, mouseMessage.Y, mouseMessage.WheelDelta, mouseMessage.ScreenWidth, mouseMessage.ScreenHeight, mouseMessage.LeftButton, mouseMessage.MiddleButton, mouseMessage.RightButton, mouseMessage.FirstExtendedButton, mouseMessage.SecondExtendedButton));
                         break;
                     case MessageType.KeyboardMessage:
                         var keyboardMessage = new KeyboardMessage(message.Payload);
@@ -117,7 +117,7 @@ namespace Ryora.Client.Services.Implementation
         public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight)
         {
             if (!IsConnected) return;
-            var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight), ConnectionId, channel, MessageId);
+            var message = Messaging.CreateMessage(new MouseMessage(x, y, 0, screenWidth, screenHeight), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 

@@ -6,6 +6,7 @@ namespace Ryora.Client.Models
     {
         public int X { get; set; }
         public int Y { get; set; }
+        public int WheelDelta { get; set; }
         public int ScreenWidth { get; set; }
         public int ScreenHeight { get; set; }
         public bool LeftButton { get; set; }
@@ -14,10 +15,11 @@ namespace Ryora.Client.Models
         public bool FirstExtendedButton { get; set; }
         public bool SecondExtendedButton { get; set; }
 
-        public MouseMessageEventArgs(int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
+        public MouseMessageEventArgs(int x, int y, int wheelDelta, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
         {
             X = x;
             Y = y;
+            WheelDelta = wheelDelta;
             LeftButton = leftButton;
             MiddleButton = middleButton;
             RightButton = rightButton;

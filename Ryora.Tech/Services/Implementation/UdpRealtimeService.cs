@@ -68,9 +68,9 @@ namespace Ryora.Tech.Services.Implementation
             });
         }
 
-        public async Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
+        public async Task SendMouseCoords(short channel, int x, int y, int wheelDelta, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton)
         {
-            var message = Messaging.CreateMessage(new MouseMessage(x, y, screenWidth, screenHeight, leftButton, middleButton, rightButton, firstExtendedButton, secondExtendedButton), ConnectionId, channel, MessageId);
+            var message = Messaging.CreateMessage(new MouseMessage(x, y, wheelDelta, screenWidth, screenHeight, leftButton, middleButton, rightButton, firstExtendedButton, secondExtendedButton), ConnectionId, channel, MessageId);
             await Client.SendAsync(message, message.Length, ServerEndPoint);
         }
 

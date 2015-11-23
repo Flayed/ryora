@@ -70,7 +70,7 @@ namespace Ryora.Client
                 if (!IsStreaming) return;
                 var ea = e as MouseMessageEventArgs;
                 if (ea == null || ea.X == 0 || ea.Y == 0 || ea.ScreenWidth == 0 || ea.ScreenHeight == 0) return;
-                InputService.SetMousePosition(ea.X, ea.Y, ea.ScreenWidth, ea.ScreenHeight, ea.LeftButton, ea.MiddleButton, ea.RightButton);
+                InputService.SetMousePosition(ea.X, ea.Y, ea.WheelDelta, ea.ScreenWidth, ea.ScreenHeight, ea.LeftButton, ea.MiddleButton, ea.RightButton);
             };
 
             RealtimeService.KeyboardInput += (s, e) =>

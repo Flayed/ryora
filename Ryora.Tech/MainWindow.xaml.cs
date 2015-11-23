@@ -130,6 +130,7 @@ namespace Ryora.Tech
             MouseMove += async (s, e) => { await MouseEvent(s, e); };
             MouseDown += async (s, e) => { await MouseEvent(s, e); };
             MouseUp += async (s, e) => { await MouseEvent(s, e); };
+            MouseWheel += async (s, e) => { await MouseEvent(s, e, e.Delta); };
 
             KeyDown += async (s, e) => { await KeyboardEvent(true, e); };
             KeyUp += async (s, e) => { await KeyboardEvent(false, e); };
@@ -162,10 +163,10 @@ namespace Ryora.Tech
             return (short)vk;
         }
 
-        private async Task MouseEvent(object sender, MouseEventArgs e)
+        private async Task MouseEvent(object sender, MouseEventArgs e, int mouseWheelDelta = 0)
         {
             var position = e.GetPosition(Screenshot);
-            await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight, e.LeftButton == MouseButtonState.Pressed, e.MiddleButton == MouseButtonState.Pressed, e.RightButton == MouseButtonState.Pressed, e.XButton1 == MouseButtonState.Pressed, e.XButton2 == MouseButtonState.Pressed);
+            await RealtimeService.SendMouseCoords(Channel, (int)position.X, (int)position.Y, mouseWheelDelta, (int)Screenshot.ActualWidth, (int)Screenshot.ActualHeight, e.LeftButton == MouseButtonState.Pressed, e.MiddleButton == MouseButtonState.Pressed, e.RightButton == MouseButtonState.Pressed, e.XButton1 == MouseButtonState.Pressed, e.XButton2 == MouseButtonState.Pressed);
         }
 
         public ImageSource GetMousePointerImage()

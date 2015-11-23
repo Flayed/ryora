@@ -6,6 +6,7 @@
 
         public short X { get; set; }
         public short Y { get; set; }
+        public short WheelDelta { get; set; }
         public bool LeftButton { get; set; }
         public bool MiddleButton { get; set; }
         public bool RightButton { get; set; }
@@ -14,7 +15,7 @@
         public ushort ScreenWidth { get; set; }
         public ushort ScreenHeight { get; set; }
 
-        public MouseMessage(int x, int y, int screenWidth, int screenHeight, bool leftButton = false, bool middleButton = false, bool rightButton = false, bool firstExtendedButton = false, bool secondExtendedButton = false)
+        public MouseMessage(int x, int y, int wheelDelta, int screenWidth, int screenHeight, bool leftButton = false, bool middleButton = false, bool rightButton = false, bool firstExtendedButton = false, bool secondExtendedButton = false)
         {
             X = (short)x;
             Y = (short)y;
@@ -25,6 +26,7 @@
             RightButton = rightButton;
             FirstExtendedButton = firstExtendedButton;
             SecondExtendedButton = secondExtendedButton;
+            WheelDelta = (short)wheelDelta;
         }
 
         public MouseMessage(byte[] payload)
@@ -32,6 +34,7 @@
             var offset = 0;
             X = MessageConverter.ReadShort(payload, ref offset);
             Y = MessageConverter.ReadShort(payload, ref offset);
+            WheelDelta = MessageConverter.ReadShort(payload, ref offset);
             ScreenWidth = MessageConverter.ReadUShort(payload, ref offset);
             ScreenHeight = MessageConverter.ReadUShort(payload, ref offset);
             var boolArray = MessageConverter.ReadBoolArray(payload, ref offset);
@@ -44,7 +47,7 @@
 
         public byte[] ToPayload()
         {
-            return MessageConverter.Payloader(X, Y, ScreenWidth, ScreenHeight,
+            return MessageConverter.Payloader(X, Y, WheelDelta, ScreenWidth, ScreenHeight,
                 new bool[] { LeftButton, MiddleButton, RightButton, FirstExtendedButton, SecondExtendedButton });
         }
     }

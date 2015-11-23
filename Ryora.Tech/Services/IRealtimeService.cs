@@ -15,7 +15,7 @@ namespace Ryora.Tech.Services
         Task StartConnection(short channel, int screenWidth, int screenHeight);
         Task EndConnection(short channel, bool reconnect = false);
 
-        Task SendMouseCoords(short channel, int x, int y, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton);
+        Task SendMouseCoords(short channel, int x, int y, int mouseWheelDelta, int screenWidth, int screenHeight, bool leftButton, bool middleButton, bool rightButton, bool firstExtendedButton, bool secondExtendedButton);
 
         Task SendKeyboardInput(short channel, bool isDown, params short[] virtualKeyCodes);
 

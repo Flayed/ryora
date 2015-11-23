@@ -1156,10 +1156,10 @@ namespace Ryora.Client.Services.Implementation
         private MouseHandler Mouse { get; set; } = new MouseHandler();
         private KeyboardHandler Keyboard { get; set; } = new KeyboardHandler();
 
-        public void SetMousePosition(int x, int y, int sourceWidth, int sourceHeight, bool leftButton, bool middleButton,
+        public void SetMousePosition(int x, int y, int wheelDelta, int sourceWidth, int sourceHeight, bool leftButton, bool middleButton,
             bool rightButton)
         {
-            var inputList = Mouse.Handle(x, y, sourceWidth, sourceHeight, leftButton, middleButton, rightButton);
+            var inputList = Mouse.Handle(x, y, wheelDelta, sourceWidth, sourceHeight, leftButton, middleButton, rightButton);
             SendInput((uint)inputList.Length, inputList, INPUT.Size);
         }
 
@@ -1189,7 +1189,7 @@ namespace Ryora.Client.Services.Implementation
             private bool IsMiddleButtonDown { get; set; } = false;
             private bool IsRightButtonDown { get; set; } = false;
 
-            public INPUT[] Handle(int x, int y, int sourceWidth, int sourceHeight, bool leftButton,
+            public INPUT[] Handle(int x, int y, int wheelDelta, int sourceWidth, int sourceHeight, bool leftButton,
                 bool middleButton, bool rightButton)
             {
                 var px = (double)x / sourceWidth;
@@ -1214,6 +1214,7 @@ namespace Ryora.Client.Services.Implementation
                     }
                 };
 
+                inputList.AddIfNotNull(HandleMouseWheel(wheelDelta));
                 inputList.AddIfNotNull(HandleMouseButton(MouseButton.Left, leftButton));
                 inputList.AddIfNotNull(HandleMouseButton(MouseButton.Middle, middleButton));
                 inputList.AddIfNotNull(HandleMouseButton(MouseButton.Right, rightButton));
@@ -1306,6 +1307,27 @@ namespace Ryora.Client.Services.Implementation
                 }
 
                 return null;
+            }
+
+            private INPUT? HandleMouseWheel(int wheelDelta)
+            {
+                if (wheelDelta == 0) return null;
+                return new INPUT()
+                {
+                    type = (uint)InputType.Mouse,
+                    U = new InputUnion()
+                    {
+                        mi = new MOUSEINPUT()
+                        {
+                            dx = 0,
+                            dy = 0,
+                            mouseData = wheelDelta,
+                            dwFlags = MOUSEEVENTF.WHEEL,
+                            time = 0,
+                            dwExtraInfo = UIntPtr.Zero
+                        }
+                    }
+                };
             }
         }
 
