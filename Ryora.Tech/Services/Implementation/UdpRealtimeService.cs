@@ -18,7 +18,18 @@ namespace Ryora.Tech.Services.Implementation
 
         private const int MissedFragmentThreshold = 10000;
 
-        private short ConnectionId { get; set; }
+        private static short? _connectionId = null;
+        private static short ConnectionId
+        {
+            get
+            {
+                if (_connectionId == null)
+                {
+                    _connectionId = MessageConverter.ReadShort(Guid.NewGuid().ToByteArray(), 0);
+                }
+                return _connectionId.Value;
+            }
+        }
         private UdpClient Client { get; } = new UdpClient();
         private bool IsConnected { get; set; } = false;
         private List<ImageFragment> ImageFragments { get; set; } = new List<ImageFragment>();
@@ -43,7 +54,6 @@ namespace Ryora.Tech.Services.Implementation
 
         public UdpRealtimeService(short channel)
         {
-            ConnectionId = MessageConverter.ReadShort(Guid.NewGuid().ToByteArray(), 0);
             var missedFragmentTimer = new System.Timers.Timer(1000);
             missedFragmentTimer.Elapsed += (s, e) =>
             {
@@ -92,6 +102,7 @@ namespace Ryora.Tech.Services.Implementation
                 switch (message.Type)
                 {
                     case MessageType.Disconnect:
+                    case MessageType.Terminate:
                         await EndConnection(channel, true);
                         listening = false;
                         break;
@@ -135,9 +146,10 @@ namespace Ryora.Tech.Services.Implementation
 
         public async Task EndConnection(short channel, bool reconnect = false)
         {
-            var disconnectMessage = Messaging.CreateMessage(MessageType.Disconnect, ConnectionId, channel, MessageId);
+            var disconnectMessage = Messaging.CreateMessage((reconnect ? MessageType.Disconnect : MessageType.Terminate), ConnectionId, channel, MessageId);
             await Client.SendAsync(disconnectMessage, disconnectMessage.Length, ServerEndPoint);
             IsConnected = false;
+            await Task.Delay(100);
             Disconnect?.Invoke(this, reconnect);
         }
 

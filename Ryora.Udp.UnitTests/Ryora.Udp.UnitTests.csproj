@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="KeyboardMessageTests.cs" />
     <Compile Include="MessageConverterTests.cs" />
+    <Compile Include="MessagingTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

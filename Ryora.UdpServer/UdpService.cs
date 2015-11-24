@@ -84,6 +84,11 @@ namespace Ryora.UdpServer
                         Terminal.LogLine($"Client {requestMessage.ConnectionId} disconnected from channel {requestMessage.Channel}", ConsoleColor.Yellow);
                         await SendMessage(requestMessage);
                         break;
+                    case MessageType.Terminate:
+                        Connections.RemoveAll(cr => cr.Id.Equals(requestMessage.ConnectionId));
+                        Terminal.LogLine($"Client {requestMessage.ConnectionId} terminated connection from channel {requestMessage.Channel}", ConsoleColor.Magenta);
+                        await SendMessage(requestMessage);
+                        break;
                     default:
                         if (!Elapsed.IsRunning) Elapsed.Start();
                         await SendMessage(requestMessage);

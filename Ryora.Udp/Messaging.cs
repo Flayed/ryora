@@ -13,7 +13,8 @@ namespace Ryora.Udp
         MouseMessage = 4,
         KeyboardMessage = 5,
         Image = 6,
-        Sharing = 7
+        Sharing = 7,
+        Terminate = 8
     }
 
     public static class Messaging

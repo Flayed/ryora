@@ -58,6 +58,11 @@ namespace Ryora.Client
                 }
             });
 
+            Closing += async (o, e) =>
+            {
+                await RealtimeService.EndConnection(Channel);
+            };
+
             GlobalKeyboardMouseHook.MouseMove += async (s, e) =>
             {
                 if (!IsStreaming || MouseMoveThrottleTimer.ElapsedMilliseconds < MouseMoveThrottle) return;
@@ -95,13 +100,18 @@ namespace Ryora.Client
                 }
             };
 
-            RealtimeService.Disconnect += (s, e) =>
+            RealtimeService.Disconnect += (s, reconnect) =>
             {
                 InputService.Reset();
-                Task.Run(async () =>
+                if (reconnect)
                 {
-                    await RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth, ScreenshotService.ScreenHeight);
-                });
+                    Task.Run(async () =>
+                    {
+                        await
+                            RealtimeService.StartConnection(Channel, ScreenshotService.ScreenWidth,
+                                ScreenshotService.ScreenHeight);
+                    });
+                }
             };
         }
 

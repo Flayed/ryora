@@ -49,6 +49,11 @@ namespace Ryora.Tech
                 ScreenshotService.SetBitmapSize(ea.ScreenWidth, ea.ScreenHeight);
             };
 
+            Closing += async (o, e) =>
+            {
+                await RealtimeService.EndConnection(Channel);
+            };
+
             Timer imageTimer = new Timer(ImageTimerTick);
             imageTimer.Elapsed += (s, e) =>
             {
@@ -185,5 +190,7 @@ namespace Ryora.Tech
             }
             return source;
         }
+
+
     }
 }
